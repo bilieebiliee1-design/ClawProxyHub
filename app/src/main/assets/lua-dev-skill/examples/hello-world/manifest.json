@@ -1,0 +1,30 @@
+{
+  "name": "hello-world",
+  "version": "0.1.0",
+  "author": "nexport",
+  "label": {
+    "zh": "Hello World 示例",
+    "en": "Hello World Example"
+  },
+  "runtime": "lua",
+  "entry": "main.lua",
+  "protocol_version": 2,
+  "capabilities": ["chat", "models", "login"],
+  "endpoints": ["chat_completions", "messages"],
+  "auth_methods": [
+    {
+      "id": "api_key",
+      "label": { "zh": "API 密钥", "en": "API Key" },
+      "capabilities": [],
+      "fields": [
+        {
+          "name": "api_key",
+          "label": { "zh": "密钥（任意非空字符串）", "en": "Key (any non-empty string)" },
+          "type": "password",
+          "required": true,
+          "placeholder": "sk-..."
+        }
+      ]
+    }
+  ]
+}

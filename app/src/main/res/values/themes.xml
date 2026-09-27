@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Theme.NexPort：保持 Material3 DayNight 父级；全部颜色经 nx* attr 间接引用，
+         values-night/ 自动切换（designSystem：修复旧版在 DayNight 上硬编码暗色
+         windowBackground 导致的浅色模式不可读问题）。 -->
+    <style name="Theme.NexPort.Base" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="nxPageBg">@color/nx_page_bg</item>
+        <item name="nxCardSurface">@color/nx_card_surface</item>
+        <item name="nxSeparator">@color/nx_separator</item>
+        <item name="nxTextPrimary">@color/nx_text_primary</item>
+        <item name="nxTextSecondary">@color/nx_text_secondary</item>
+        <item name="nxTextTertiary">@color/nx_text_tertiary</item>
+        <item name="nxTextDisabled">@color/nx_text_disabled</item>
+        <item name="nxAccent">@color/nx_accent</item>
+        <item name="nxBtnPrimaryBg">@color/nx_btn_primary_bg</item>
+        <item name="nxBtnPrimaryFg">@color/nx_btn_primary_fg</item>
+        <item name="nxStateOk">@color/nx_state_ok</item>
+        <item name="nxStateWarn">@color/nx_state_warn</item>
+        <item name="nxStateErr">@color/nx_state_err</item>
+
+        <item name="colorPrimary">?attr/nxAccent</item>
+        <item name="colorSecondary">?attr/nxAccent</item>
+        <item name="colorOnPrimary">?attr/nxBtnPrimaryFg</item>
+        <item name="colorSurface">?attr/nxCardSurface</item>
+        <item name="colorOnSurface">?attr/nxTextPrimary</item>
+        <item name="android:colorBackground">?attr/nxPageBg</item>
+        <item name="android:windowBackground">?attr/nxPageBg</item>
+        <item name="android:statusBarColor">?attr/nxPageBg</item>
+        <item name="android:navigationBarColor">?attr/nxPageBg</item>
+    </style>
+
+    <!-- 浅色：状态栏图标深色 -->
+    <style name="Theme.NexPort" parent="Theme.NexPort.Base">
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

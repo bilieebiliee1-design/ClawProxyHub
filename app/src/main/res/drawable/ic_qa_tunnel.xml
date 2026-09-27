@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 快捷操作·开启公网隧道（拱门形） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path
+        android:pathData="M4.5,19 L4.5,12 C4.5,7.6 7.9,4.5 12,4.5 C16.1,4.5 19.5,7.6 19.5,12 L19.5,19"
+        android:strokeColor="#FFFFFFFF" android:strokeWidth="2"
+        android:strokeLineCap="round" android:fillColor="#00000000"/>
+    <path
+        android:pathData="M3,19 L21,19 M9.5,19 L9.5,12.5 C9.5,10.8 10.6,9.8 12,9.8 C13.4,9.8 14.5,10.8 14.5,12.5 L14.5,19"
+        android:strokeColor="#FFFFFFFF" android:strokeWidth="2"
+        android:strokeLineCap="round" android:fillColor="#00000000"/>
+</vector>

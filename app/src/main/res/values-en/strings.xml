@@ -1,0 +1,515 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">NexPort</string>
+
+    <!-- ===== Common ===== -->
+    <string name="next">Next</string>
+    <string name="prev">Back</string>
+    <string name="done">Done</string>
+    <string name="skip">Skip</string>
+    <string name="cancel">Cancel</string>
+    <string name="confirm">OK</string>
+    <string name="retry">Retry</string>
+    <string name="copy">Copy</string>
+    <string name="copied">Copied to clipboard</string>
+    <string name="back">Back</string>
+    <string name="open">Open</string>
+    <string name="close">Close</string>
+    <string name="quit">Exit</string>
+    <string name="error">Error</string>
+    <string name="loading">Working…</string>
+    <string name="step_fmt">Step %1$d of %2$d</string>
+
+    <!-- ===== Onboarding Step0: EULA ===== -->
+    <string name="onboard_title_eula">Disclaimer &amp; Terms</string>
+    <string name="onboard_section_terms">Terms of Use</string>
+    <string name="onboard_section_disclaimer">Disclaimer</string>
+    <string name="onboard_qq_help">Questions? Join our QQ group: %1$s</string>
+    <string name="eula_markdown">Please read and understand the following before use:\n\n## 1. Nature\n\nNexPort is a local AI gateway / reverse proxy running on this device only (127.0.0.1). It provides no model service itself; it forwards requests between upstream services you configure and your clients.\n\n## 2. Your data\n\nAccount credentials, API keys and call logs are stored in a local database (credentials encrypted). Back up responsibly; data loss from misoperation, restore, or system reset is on you.\n\n## 3. Open source\n\nNexPort is built upon ClawProxyHub (AGPL-3.0) with modifications; this fork is released under AGPL-3.0. The full license and third-party notices are in “About &amp; Licenses”; the complete corresponding source is available in the fork repository (https://github.com/bilieebiliee1-design/ClawProxyHub, same link as the “About” page); see the “About” page for the upstream project and modification notes.</string>
+    <string name="disclaimer_markdown">## 1. Third-party behavior\n\nPlugins and upstream sites are outside the control of this app: plugin code, upstream API changes, and anti-abuse policies may cause failures or account restrictions/bans. Installing means you accept these risks.\n\n## 2. Tunnel exposes the gateway\n\nThe temporary tunnel (OFF by default) exposes the gateway API on a public ephemeral domain (\*.trycloudflare.com). Once enabled, your cph-\* API keys are the only line of defense. Disconnect when unused.</string>
+    <string name="eula_agree">I have read and understood the above, and agree to continue</string>
+    <string name="eula_accept">Agree &amp; Continue</string>
+    <string name="eula_reject">Decline &amp; Exit</string>
+    <string name="eula_must_agree">Please read and tick the agreement first</string>
+
+    <!-- ===== Onboarding Step1: admin account ===== -->
+    <string name="onboard_title_account">Create Admin Account</string>
+    <string name="account_hint">Used only to sign in to the local admin panel (http://127.0.0.1); unrelated to any third-party platform.</string>
+    <string name="account_username">Username</string>
+    <string name="account_password">Password</string>
+    <string name="account_password2">Confirm password</string>
+    <string name="pwd_rule_len">At least 10 characters</string>
+    <string name="pwd_rule_upper">Contains uppercase letter</string>
+    <string name="pwd_rule_lower">Contains lowercase letter</string>
+    <string name="pwd_rule_digit">Contains digit</string>
+    <string name="pwd_strength_weak">Weak</string>
+    <string name="pwd_strength_mid">Fair</string>
+    <string name="pwd_strength_good">Strong</string>
+    <string name="pwd_mismatch">Passwords do not match</string>
+    <string name="username_invalid">Username required, max 32 characters</string>
+
+    <!-- ===== Onboarding Step2: start core ===== -->
+    <string name="onboard_title_start">Starting Core</string>
+    <string name="start_phase_init">Initializing database</string>
+    <string name="start_phase_migrate">SQL migrations</string>
+    <string name="start_phase_plugins">Plugin directory</string>
+    <string name="start_phase_ready">Panel ready</string>
+    <string name="start_hint">First start creates the database and runs migrations; usually done in seconds.</string>
+    <string name="start_ok">Core started. Admin panel is ready.</string>
+    <string name="start_failed">Core failed to start</string>
+    <string name="start_copy_log">Copy error log</string>
+    <string name="setup_failed">Failed to create admin account</string>
+    <string name="setup_exists">An admin account already exists (possibly restored from backup); creation skipped.</string>
+    <string name="start_console_placeholder">Waiting for core logs…</string>
+    <string name="start_still_starting_fmt">Still starting… (waited %1$d s)</string>
+
+    <!-- ===== Onboarding Step3: guide ===== -->
+    <string name="onboard_title_guide">Quick Start</string>
+    <string name="guide_plugins_title">Meet the plugins</string>
+    <string name="guide_plugins_text">Open the panel → Plugins → Marketplace. All 10 Go plugins from the official source index are pre-bundled with the APK and load automatically at core start — no installation needed. Lua plugins can be installed online via Marketplace / Custom source / Offline upload.</string>
+    <string name="guide_tunnel_title">Tunnel is OFF by default</string>
+    <string name="guide_tunnel_text">The tunnel exposes the gateway API on a public ephemeral domain; cph-* keys are the only defense. Enable it on the home screen only when needed and disconnect after use.</string>
+    <string name="guide_bg_title">Keep running in background</string>
+    <string name="guide_bg_text">The gateway and task scheduler run in a foreground service; disabling battery optimization for this app is recommended. Timed tasks may drift under Doze. With the floating window you can check gateway status from any screen.</string>
+    <string name="guide_battery">Disable battery optimization</string>
+
+    <!-- Onboarding step-4 interactive cards -->
+    <string name="guide_notif_card_title">Notification permission</string>
+    <string name="guide_perm_granted">Granted</string>
+    <string name="guide_perm_not_granted">Not granted</string>
+    <string name="guide_notif_denied_hint">Notifications not granted: the background service still runs, but the status notification and quick actions are hidden. You can enable it later in Settings.</string>
+    <string name="guide_floating_on">Enabled</string>
+    <string name="floating_card_action">Enable floating window</string>
+
+    <!-- Go plugin explainer card -->
+    <!-- v1.4.0 compliance review 2026-09-28 low-risk item: disclose LAN listening default-on -->
+    <string name="guide_lan_title">LAN listening is ON by default</string>
+    <string name="guide_lan_text">Besides 127.0.0.1, the core also listens on the device\'s LAN address at the same port by default: only /v1 (API-key auth enforced) and /health are exposed; the panel and admin API are never reachable. The LAN endpoint is shown on Home; LAN listening can be disabled in the panel settings.</string>
+
+    <string name="guide_goplugin_title">About Go plugins</string>
+    <string name="guide_goplugin_text">This build pre-bundles all 10 Go plugins from the official source index: cline, commandcode, ima, lobsterai, mirasim, newapi, opencode, todofor, workbuddy and zcode — loaded automatically at core start, no installation needed. Android forbids executing downloaded binaries from app data (targetSdk 29+ noexec), so Go plugins cannot be installed/upgraded online; they update with the APK.</string>
+    <string name="guide_goplugin_preview">The panel “Plugins → Marketplace” annotates Android availability per plugin: bundled Go plugins show their bundled version with no upgrade button; non-bundled Go plugins are marked not-installable with the reason; Lua plugins are unrestricted and install online as usual.</string>
+
+    <!-- Step-4 keep-alive cards (v1.4.0 ⑦) -->
+    <string name="guide_autostart_title">Background &amp; autostart</string>
+    <string name="guide_autostart_text">Vendor systems restrict background execution and autostart differently: please allow NexPort to “autostart / run in background” in system settings (MIUI, EMUI etc. put it under “App management → Autostart”; guided as far as each vendor allows), together with ignoring battery optimization and the foreground service.</string>
+    <string name="guide_autostart_action">Open system settings</string>
+
+    <!-- ===== Bottom navigation ===== -->
+    <string name="tab_home">Home</string>
+    <string name="tab_panel">Panel</string>
+    <string name="tab_settings">Settings</string>
+    <string name="tab_about">About</string>
+
+    <!-- ===== Home ===== -->
+    <string name="core_state_not_started">Not started</string>
+    <string name="core_state_starting">Starting…</string>
+    <string name="core_state_running">Running</string>
+    <string name="core_state_failed">Failed</string>
+    <string name="core_not_running_inline">Core is not running</string>
+    <string name="core_start_short">Start</string>
+    <string name="core_gateway_addr">Gateway address</string>
+    <string name="core_gateway_addr_hint">Auto mode: a random port is assigned on every start</string>
+    <string name="core_gateway_addr_fixed_hint">Fixed port mode</string>
+    <string name="core_plugins">Plugins running</string>
+    <string name="core_version">Version</string>
+    <string name="core_start">Start core</string>
+    <string name="core_stop">Stop core</string>
+    <string name="core_restart">Restart core</string>
+    <string name="open_panel_tab">Open panel</string>
+    <string name="open_panel_tab_desc">Opens the local admin panel in an in-app WebView</string>
+    <string name="open_panel_need_core">Panel becomes available once the core is running</string>
+    <string name="core_action_failed">Action failed: %1$s</string>
+    <string name="notif_request_needed">Notification permission is required for the foreground service</string>
+
+    <!-- Panel credentials card -->
+    <string name="cred_card_title">Panel sign-in</string>
+    <string name="cred_user_label">Username</string>
+    <string name="cred_pass_label">Password</string>
+    <string name="cred_missing">Not saved — please sign in via the panel</string>
+    <string name="cred_footer">Stored only on this device, encrypted with AndroidKeyStore (KeyEnvelope); used for panel auto sign-in</string>
+    <string name="cred_show_password">Show password</string>
+    <string name="cred_hide_password">Hide password</string>
+    <string name="cred_copy_user">Copy username</string>
+    <string name="cred_copy_pass">Copy password</string>
+
+    <!-- Tunnel card -->
+    <string name="tunnel_title">Temporary tunnel (public)</string>
+    <string name="tunnel_off">Off (local access only)</string>
+    <string name="tunnel_confirm_title">Enable temporary tunnel?</string>
+    <string name="tunnel_confirm_text">This exposes the gateway API on a public ephemeral domain (*.trycloudflare.com). Your cph-* API keys are the only defense. HTTP/2 fallback is used if UDP/QUIC is blocked by the carrier. Enable?</string>
+    <string name="tunnel_starting">Creating tunnel…</string>
+    <string name="tunnel_active">Tunnel active</string>
+    <string name="tunnel_state_error">Tunnel error</string>
+    <string name="tunnel_failed_title">Tunnel failed to start</string>
+    <string name="tunnel_disconnected_title">Tunnel disconnected</string>
+    <string name="tunnel_exposed">Exposed to the public internet; cph-* keys are the only defense</string>
+    <string name="tunnel_dns_propagation">A freshly created domain needs ~10s for edge routing (Cloudflare 1033/530); public access may fail briefly — retry shortly</string>
+    <string name="tunnel_waited_fmt">Waited %1$d s</string>
+    <string name="tunnel_reconnecting_fmt">Reconnecting (attempt %1$d/%2$d, in %3$d s)</string>
+    <string name="tunnel_gave_up">Stopped retrying</string>
+    <string name="tunnel_manual_retry">Retry now</string>
+    <string name="tunnel_view_logs">View logs</string>
+    <string name="tunnel_copy_err">Copy error message</string>
+    <string name="tunnel_url_hint">Tap to copy the URL</string>
+    <string name="tunnel_need_lib">libcloudflared.so not found (missing from APK)</string>
+    <string name="tunnel_err_edge">Could not obtain edge nodes — check the network and try again</string>
+    <string name="tunnel_err_timeout">Timed out waiting for the ephemeral domain (90s): check the network; HTTP/2 fallback is used if UDP is blocked by the carrier</string>
+    <string name="tunnel_err_disconnect">Tunnel connection lost: check the network and try again</string>
+    <string name="tunnel_err_http2">Automatically retried with HTTP/2</string>
+    <string name="tunnel_err_generic">Check the network and try again; see Settings → Diagnostics → Logs</string>
+    <string name="tunnel_start_ok">Tunnel active</string>
+
+    <!-- Notification permission banner -->
+    <string name="notif_banner_title">Enable notifications to see gateway &amp; tunnel status</string>
+    <string name="notif_banner_enable">Enable notifications</string>
+    <string name="notif_banner_later">Not now</string>
+    <string name="notif_denied_hint">Notifications not granted: the background service still runs, but the status notification and the “Disconnect tunnel” quick action are invisible</string>
+    <string name="notif_go_settings">Open system settings</string>
+
+    <!-- ===== Panel (WebView tab) ===== -->
+    <string name="panel_title">Admin panel</string>
+    <string name="panel_loading">Connecting to the local panel…</string>
+    <string name="panel_error">Failed to load the panel</string>
+    <string name="panel_placeholder_title">Panel not ready</string>
+    <string name="panel_placeholder_body">The core is not running. Start the core to open the local panel here (listens on 127.0.0.1 only, never leaves the device).</string>
+    <string name="panel_core_stopped">Core has stopped</string>
+    <string name="panel_copy_error">Copy error message</string>
+    <string name="panel_download_title">Save exported file</string>
+    <string name="panel_download_failed">Download failed: %1$s</string>
+    <string name="panel_download_saved">Saved: %1$s</string>
+    <string name="panel_upload_failed">File selection failed</string>
+    <string name="panel_need_core">Core is not running</string>
+    <string name="panel_route_need_core">Core is not running — it will open automatically once started</string>
+    <string name="panel_token_mint_failed">Automatic sign-in with saved credentials failed. Please sign in on the panel.</string>
+
+    <!-- ===== Settings ===== -->
+    <string name="settings_title">Settings</string>
+    <string name="group_appearance">Appearance</string>
+    <string name="group_general">General</string>
+    <string name="group_network">Network</string>
+    <string name="group_panel_login">Panel sign-in</string>
+    <string name="group_service">Keep-alive &amp; permissions</string>
+    <string name="keepalive_notif_row">Notification permission</string>
+    <string name="keepalive_notif_sub">The foreground-service status notification and quick actions depend on it</string>
+    <string name="keepalive_autostart_row">Autostart &amp; background</string>
+    <string name="keepalive_autostart_sub">Vendor-guided: app info / autostart management page</string>
+    <string name="group_tunnel">Tunnel</string>
+    <string name="group_security">Security</string>
+    <string name="group_diagnostics">Diagnostics</string>
+
+    <string name="setting_theme">Theme</string>
+    <string name="theme_system">Follow system</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="theme_subtitle">The panel theme follows this setting</string>
+    <string name="setting_font_size">Font size</string>
+    <string name="font_small">Small</string>
+    <string name="font_standard">Standard</string>
+    <string name="font_large">Large</string>
+    <string name="font_xlarge">Extra large</string>
+    <string name="font_preview_sample">Sample text: gateway running · 127.0.0.1:17777</string>
+    <string name="setting_predictive_back">Predictive back</string>
+    <string name="predictive_back_subtitle">Back gesture shows a preview animation; the system-level animation is an install-time behavior and cannot be disabled at runtime</string>
+
+    <string name="setting_language">Language</string>
+    <string name="lang_system">Follow system</string>
+    <string name="lang_zh">简体中文</string>
+    <string name="lang_en">English</string>
+
+    <string name="setting_gateway_port">Gateway port</string>
+    <string name="port_auto">Auto · random</string>
+    <string name="port_fixed">Fixed</string>
+    <string name="port_hint">1024–65535, 17777 recommended</string>
+    <string name="port_invalid">Port must be between 1024 and 65535</string>
+    <string name="port_occupied">Port %1$d is already in use, choose another</string>
+    <string name="port_saved_restart">Gateway port saved — takes effect after the core restarts</string>
+    <string name="action_restart_now">Restart now</string>
+
+    <string name="setting_foreground">Foreground service</string>
+    <string name="foreground_subtitle">Hosts the persistent core and task scheduler; when off, tasks drift under Doze and the notification/quick actions disappear</string>
+    <string name="setting_battery">Battery optimization</string>
+    <string name="autostart_title">Start on boot</string>
+    <string name="autostart_summary">Start the foreground service after boot (off by default)</string>
+    <string name="exit_all">Exit and stop core</string>
+    <string name="exit_confirm_title">Exit NexPort?</string>
+    <string name="exit_confirm_text">This disconnects the tunnel, stops the core and the foreground service. Exit?</string>
+    <string name="setting_about">About NexPort</string>
+
+    <string name="setting_auto_reconnect">Auto reconnect</string>
+    <string name="auto_reconnect_subtitle">Reconnect automatically with 30s/1m/2m/5m backoff, up to 5 attempts; manual disconnects never trigger it</string>
+
+    <string name="bg_battery">Battery optimization: not ignored (recommended to disable)</string>
+    <string name="bg_battery_ok">Battery optimization: ignored</string>
+
+    <!-- Floating window keep-alive (floatingWindowSpec) -->
+    <string name="setting_floating">Floating window</string>
+    <string name="floating_subtitle">Shows gateway &amp; tunnel status on any screen; in-process visualization, disappears when the app is killed</string>
+    <string name="floating_permission_text">The floating window shows gateway &amp; tunnel status on any screen (in-process visualization only; use alongside the foreground service — it adds no keep-alive of its own). It requires the system “Display over other apps” permission; grant it and return to enable automatically.</string>
+    <string name="floating_go_grant">Grant</string>
+    <string name="floating_denied_hint">Floating window not granted: enable “Display over other apps” in system settings, or tap here to retry</string>
+    <string name="floating_close">Close floating window</string>
+    <string name="floating_caption">In-process status visualization; use alongside the foreground service — it adds no keep-alive of its own</string>
+    <!-- v1.3.0 ①: capsule tunnel badge (short forms) + quick stop in the info card -->
+    <string name="floating_tunnel_badge_starting">Linking</string>
+    <string name="floating_tunnel_badge_active">Live</string>
+    <string name="floating_tunnel_badge_error">Tunnel error</string>
+    <string name="floating_quick_stop">Quick stop</string>
+
+    <!-- Change password -->
+    <string name="cp_title">Change admin password</string>
+    <string name="cp_old">Current password</string>
+    <string name="cp_new">New password</string>
+    <string name="cp_new2">Confirm new password</string>
+    <string name="cp_submit">Change password</string>
+    <string name="cp_success">Password changed; saved credentials on this device updated</string>
+    <string name="cp_failed">Change failed: %1$s</string>
+    <string name="cp_need_relogin">Cannot read the saved credentials (may be invalid). Please sign in via the panel and change it there</string>
+    <string name="cp_hint">This page enforces the same four rules as onboarding (≥10 chars incl. upper/lower/digit); changes made inside the panel are only limited by the server’s 6-char minimum</string>
+
+    <!-- Clear credentials / cache -->
+    <string name="setting_forget_credentials">Forget saved panel credentials</string>
+    <string name="forget_credentials_confirm">This deletes the panel username/password saved on this device; the panel will require manual sign-in next time. Clear?</string>
+    <string name="credentials_cleared">Saved credentials cleared</string>
+    <string name="setting_logs">Run logs</string>
+    <string name="logs_title">Run logs</string>
+    <string name="logs_copy_all">Copy all</string>
+    <string name="logs_export">Export .txt</string>
+    <string name="logs_clear">Clear</string>
+    <string name="logs_live">Live · listening</string>
+    <string name="logs_filter_all">All</string>
+    <string name="logs_filter_tunnel">[tunnel]</string>
+    <string name="logs_filter_error">[error]</string>
+    <string name="logs_empty">No logs yet</string>
+    <string name="logs_export_saved">Saved: %1$s</string>
+    <string name="logs_export_failed">Export failed: %1$s</string>
+    <string name="setting_clear_cache">Clear cache</string>
+    <string name="clear_cache_subtitle">Clears app temp files; core data and credentials are not touched</string>
+    <string name="clear_cache_confirm">Clear app temp files (currently %1$s)? Core data and credentials are not touched.</string>
+    <string name="cache_cleared">Freed %1$s</string>
+    <string name="cache_size_fmt">%1$s used</string>
+    <string name="cache_computing">Calculating…</string>
+
+    <!-- ===== About ===== -->
+    <string name="about_title">About</string>
+    <string name="about_group_version">Version</string>
+    <string name="about_product">Product &amp; version</string>
+    <string name="about_product_text">NexPort %1$s\nCore: %2$s</string>
+    <string name="about_version_code_fmt">versionCode: %1$d</string>
+    <string name="about_update_hint">Update checks are handled by the panel (core /admin/version)</string>
+    <string name="about_group_guide">User guide</string>
+    <string name="about_guide_entry_title">Quick-start guide</string>
+    <string name="about_guide_entry_sub">8 sections: first use → panel → plugins → calling → FAQ</string>
+    <string name="guide_page_title">User guide</string>
+    <string name="about_group_feedback">Community</string>
+    <string name="about_qq_group">QQ group</string>
+    <string name="about_qq_number">1124936153</string>
+    <string name="about_qq_copy">Copy group number</string>
+    <string name="about_qq_hint">Please mention “NexPort user” when joining</string>
+    <string name="about_qq_join">Join with one tap</string>
+    <string name="about_qq_join_failed">QQ/TIM not detected</string>
+    <string name="about_qq_join_web_hint">Opened the join page in your browser — paste the group number to search and join</string>
+    <string name="about_group_eula">Agreement &amp; disclaimer</string>
+    <string name="about_eula_entry">Terms of use</string>
+    <string name="about_disclaimer_entry">Disclaimer</string>
+    <string name="about_group_license">Licenses &amp; attribution</string>
+    <string name="about_upstream">Built upon an upstream project</string>
+    <string name="about_upstream_text">NexPort is built upon ClawProxyHub (AGPL-3.0) with modifications. Upstream source:</string>
+    <string name="about_upstream_open">Open upstream repository</string>
+    <string name="about_licenses">Licenses</string>
+    <string name="about_licenses_text">This app is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). Third-party notices: THIRD_PARTY_NOTICES. The fork’s complete corresponding source is published in the public fork repository; upstream project and license:</string>
+    <string name="license_view">View LICENSE (full AGPL-3.0 text)</string>
+    <string name="notices_view">View third-party notices (THIRD_PARTY_NOTICES)</string>
+    <string name="license_title_fmt">%1$s</string>
+    <string name="copy_link">Copy link</string>
+    <string name="open_link">Open link</string>
+
+    <!-- Support QR banner (aboutSpec) -->
+    <string name="support_banner_title">Support the author</string>
+    <string name="support_banner_sub">If NexPort helps you, buy the author a coffee</string>
+    <string name="support_scan_hint">Take a screenshot or save the image, then scan it in WeChat / Alipay</string>
+    <string name="support_save">Save image</string>
+    <string name="support_saved">Saved: %1$s</string>
+    <string name="support_save_failed">Failed: %1$s</string>
+    <string name="support_share">Share</string>
+    <!-- v1.4.1 ①: support page copy card (why support / VIP members group; one-tap join reuses joinQQGroup chain) -->
+    <string name="support_motive_title">Why support</string>
+    <string name="support_motive_1">Your support is what keeps continuous maintenance going.</string>
+    <string name="support_motive_2">With enough encouragement, the project can keep running on pure passion.</string>
+    <string name="support_vip_title">VIP members group</string>
+    <string name="support_vip_text">After supporting, join the group and contact the author to enter the VIP members group — feedback there is prioritized, with lasting technical support and more member perks.</string>
+    <string name="support_vip_qq_fmt">QQ group: %1$s</string>
+    <!-- v1.4.1 ②: about page fork statement (AGPL-3.0 compliance + star guidance) -->
+    <string name="about_fork_statement">Forks and modifications are welcome, but must comply with AGPL-3.0 (keep the LICENSE and attribution, keep the source open). Stars for this repository and the upstream one are appreciated.</string>
+
+    <!-- Home quick actions (v1.4.0 ④: six → four) -->
+    <string name="faq_section">Quick actions</string>
+    <string name="qa_donate">Donate</string>
+    <string name="qa_checkin">One-tap check-in</string>
+    <string name="qa_join">Join QQ group</string>
+    <string name="qa_probe">One-tap probe</string>
+
+    <!-- v1.4.0 wrap-up (version stays 1.4.0) -->
+    <string name="lua_dev_title">Lua plugin development</string>
+    <string name="lua_dev_intro">Write your own channel plugin in Lua: a complete dev guide (SKILL.md, feed it to your AI agent) plus two ready-to-install examples, one tap to export.</string>
+    <string name="lua_dev_open_guide">Open the dev guide</string>
+    <string name="lua_dev_guide_title">Lua plugin dev guide (SKILL.md)</string>
+    <string name="lua_dev_export_skill">Export SKILL.md</string>
+    <string name="lua_dev_export_autoclaw">Export official example: autoclaw</string>
+    <string name="lua_dev_export_hello">Export hello-world template</string>
+    <string name="lua_dev_export_hint">The exported zip has manifest.json at its root and can be installed directly via Panel → Plugins → Offline upload</string>
+    <string name="lua_dev_export_saved">Exported: %1$s</string>
+    <string name="lua_dev_export_failed">Export failed: %1$s</string>
+    <!-- Compliance review (HIGH): bundled source package restored (AGPL §13) -->
+
+    <!-- Batch progress dialog (check-in / probe) -->
+    <string name="progress_close">Close</string>
+    <string name="progress_cancel_hint">Closing this window aborts the batch run</string>
+    <string name="checkin_title">One-tap check-in</string>
+    <string name="checkin_start">Triggered all enabled scheduled tasks…</string>
+    <string name="checkin_running_fmt">Running %1$d/%2$d…</string>
+    <string name="checkin_done_fmt">Done: %1$d succeeded · %2$d skipped · %3$d failed</string>
+    <string name="checkin_done_skip_fmt">Done: %1$d succeeded · %2$d failed · %3$d skipped (skipped = ran OK but the action needs manual steps or conditions unmet)</string>
+    <string name="checkin_no_tasks">Nothing to run: create enabled task rules for your plugins in the panel’s “Tasks” first</string>
+    <string name="checkin_busy">A check-in batch is already running, try again later</string>
+    <string name="probe_title">One-tap probe</string>
+    <string name="probe_start">Probing all channels &amp; models in parallel (unified ping / 16 tokens)…</string>
+    <string name="probe_running_fmt">Probing %1$d/%2$d…</string>
+    <string name="probe_done_fmt">Done: %1$d alive · %2$d failed</string>
+    <string name="probe_no_targets">No channels to probe: add accounts and sync model catalogs first</string>
+
+    <!-- v1.4.0 ②: gateway card (local/LAN endpoints + compat paths + API key) -->
+    <string name="endpoint_local_label">Local endpoint</string>
+    <string name="endpoint_lan_label">LAN endpoint</string>
+    <string name="endpoint_lan_off">Not available (no LAN connected, or LAN listening disabled in the panel)</string>
+    <string name="endpoint_lan_off_panel">LAN listening is off (re-enable in Panel → Settings → Network)</string>
+    <string name="endpoint_tunnel_label">Public endpoint (tunnel)</string>
+    <string name="endpoint_copy_desc">Copy endpoint</string>
+    <string name="compat_toggle">Compatible endpoints &amp; usage</string>
+    <string name="core_restart_row_sub">Restarts the gateway service and task scheduler (e.g. after port changes)</string>
+    <string name="core_restart_confirm">Restart the core? Local / LAN / tunnel calls drop briefly, usually recovering within seconds.</string>
+    <string name="endpoint_compat_text">Append the path you need to either endpoint: /v1/chat/completions (OpenAI-compatible), /v1/messages (Anthropic-compatible), /v1/responses (OpenAI Responses, Codex CLI etc.), /v1/models (model list). Example: http://127.0.0.1:&lt;port&gt;/v1/chat/completions.</string>
+    <string name="apikey_label">API key</string>
+    <string name="apikey_none">No key yet — one is generated automatically once any account is configured, synced with the panel’s “API keys”</string>
+    <string name="apikey_sync_hint">Synced with the panel’s “API keys”</string>
+    <string name="apikey_show">Show key</string>
+    <string name="apikey_hide">Hide key</string>
+    <string name="apikey_copy">Copy key</string>
+    <string name="apikey_reveal_failed">Failed to reveal key: %1$s</string>
+    <string name="apikey_loading">Loading…</string>
+    <string name="port_change_fmt">Gateway port changed: %1$d → %2$d; external clients must switch to the new port</string>
+
+    <!-- v1.4.0 ③: providers section -->
+    <string name="providers_section">Providers</string>
+    <string name="providers_subtitle">Tap a provider to open the panel’s “Accounts → Add account” with that plugin preselected (groups/routes/keys are auto-configured)</string>
+    <string name="providers_empty">Installed providers appear here once the core is running (kept in sync with the panel’s plugin list)</string>
+    <string name="provider_add_account_fmt">Add %1$s account</string>
+
+    <!-- v1.4.0 follow-up fixes (version stays 1.4.0) -->
+    <string name="tunnel_switch_sub">Enabling exposes the gateway API on a public ephemeral domain (*.trycloudflare.com); your cph-* API keys are the only defense</string>
+    <string name="account_overview_section">Account overview</string>
+    <string name="account_overview_subtitle">Same source as the panel dashboard\'s “Channel overview”; refreshed when you open Home</string>
+    <string name="account_overview_empty">No channel data yet — add accounts and finish setup to see per-channel accounts, status and credits here</string>
+    <string name="account_overview_status_fmt">%1$d account(s) · active %2$d · disabled %3$d · expired %4$d</string>
+    <string name="account_overview_credits_fmt">remaining %1$s · used %2$s · total %3$s</string>
+    <string name="probe_group_fmt">[%1$s · %2$s]</string>
+    <string name="probe_line_ok_fmt">✔ %1$s: connect %2$dms · first token %3$dms · %4$s tok/s</string>
+    <string name="probe_retry_fmt">↻ %1$s: attempt %2$d/4 · %3$s</string>
+
+    <!-- v1.4.0 ⑤: out-of-the-box card -->
+
+    <!-- ===== User guide (8 sections; each step: one main line + one sub line, no images) ===== -->
+    <string name="guide_s1_title">Section 1 · First use</string>
+    <string-array name="guide_s1_steps">
+        <item>Read and accept the terms of use and disclaimer on first launch</item>
+        <item>Create the admin account: username + password of ≥10 chars incl. upper/lower/digit</item>
+        <item>Core start runs: init database → SQL migrations → plugin directory → panel ready</item>
+        <item>Then you land on Home with the core already running</item>
+    </string-array>
+    <string-array name="guide_s1_subs">
+        <item>Declining exits the app</item>
+        <item>Used only to sign in to the local admin panel</item>
+        <item>First start usually finishes in seconds</item>
+        <item>Appearance and language can be changed anytime in Settings</item>
+    </string-array>
+    <string name="guide_s2_title">Section 2 · Open the panel</string>
+    <string-array name="guide_s2_steps">
+        <item>Tap the “Panel” tab at the bottom</item>
+        <item>Sign in with the admin account created during onboarding</item>
+    </string-array>
+    <string-array name="guide_s2_subs">
+        <item>The panel is embedded in an in-app WebView, listening on 127.0.0.1 only</item>
+        <item>Signs in automatically when credentials are saved</item>
+    </string-array>
+    <string name="guide_s3_title">Section 3 · Plugins &amp; marketplace</string>
+    <string-array name="guide_s3_steps">
+        <item>Open the panel → Plugins → Marketplace</item>
+        <item>Three entries: marketplace / custom source / offline upload</item>
+    </string-array>
+    <string-array name="guide_s3_subs">
+        <item>All 10 Go plugins from the official source index are pre-bundled and work out of the box</item>
+        <item>Lua plugins install online on Android; Go plugins cannot — they update with the APK</item>
+    </string-array>
+    <string name="guide_s4_title">Section 4 · Configure upstream &amp; keys</string>
+    <string-array name="guide_s4_steps">
+        <item>Create an account and cph-* API keys inside the panel</item>
+        <item>Point clients to 127.0.0.1:&lt;gateway port&gt; with the key</item>
+    </string-array>
+    <string-array name="guide_s4_subs">
+        <item>The key is the only defense once the tunnel is on</item>
+        <item>The gateway address can be copied from the Home status card</item>
+    </string-array>
+    <string name="guide_s5_title">Section 5 · Remote access · temporary tunnel</string>
+    <string-array name="guide_s5_steps">
+        <item>“Temporary tunnel” is OFF by default (Settings → Tunnel)</item>
+        <item>Enable it after acknowledging the risk; disconnect after use</item>
+        <item>LAN listening is ON by default: /v1+key and /health only, panel-switchable</item>
+        <item>On failure, check the error on the card and retry</item>
+    </string-array>
+    <string-array name="guide_s5_subs">
+        <item>Enabling exposes the gateway API on a public ephemeral domain</item>
+        <item>LAN side: /v1 (key enforced) and /health only, panel-switchable</item>
+        <item>cph-* keys are the only defense</item>
+        <item>See Settings → Diagnostics → Logs for troubleshooting</item>
+    </string-array>
+    <string name="guide_s6_title">Section 6 · Running in background</string>
+    <string-array name="guide_s6_steps">
+        <item>The foreground service lives in Settings → Keep-alive &amp; permissions</item>
+        <item>Disable battery optimization for this app</item>
+    </string-array>
+    <string-array name="guide_s6_subs">
+        <item>Keep it on for background stability</item>
+        <item>Timed tasks may drift under Doze</item>
+    </string-array>
+    <string name="guide_s7_title">Section 7 · Backup &amp; restore</string>
+    <string-array name="guide_s7_steps">
+        <item>Panel → Settings → export backup zip</item>
+        <item>Restore: import the zip, then restart the core when prompted</item>
+    </string-array>
+    <string-array name="guide_s7_subs">
+        <item>The backup contains the database and keys — keep it safe</item>
+        <item>Restoring replaces all current data</item>
+    </string-array>
+    <string name="guide_s8_title">Section 8 · FAQ</string>
+    <string-array name="guide_s8_steps">
+        <item>Panel won’t open? Make sure the core is running</item>
+        <item>Tunnel won’t connect? Check the run logs</item>
+        <item>No notifications? Check the system notification permission</item>
+        <item>Change admin password? Settings → Security</item>
+    </string-array>
+    <string-array name="guide_s8_subs">
+        <item>The panel tab shows a start button when the core is down</item>
+        <item>Edge resolution failures or carrier UDP blocking fall back to HTTP/2 automatically</item>
+        <item>Settings → Keep-alive &amp; permissions → Open system settings</item>
+        <item>In-panel changes only require 6 chars; the on-device 10-char rules are recommended</item>
+    </string-array>
+
+    <!-- ===== Notifications ===== -->
+    <string name="notif_channel_gateway">Gateway service</string>
+    <string name="notif_channel_gateway_desc">Core status and temporary tunnel info</string>
+    <string name="notif_core_running">Gateway running · 127.0.0.1:%1$d</string>
+    <string name="notif_core_starting">Gateway starting…</string>
+    <string name="notif_tunnel_active">Tunnel: %1$s</string>
+    <string name="notif_action_disconnect">Disconnect tunnel</string>
+    <string name="notif_action_stop">Stop gateway</string>
+</resources>

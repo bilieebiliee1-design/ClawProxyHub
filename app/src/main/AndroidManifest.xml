@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- QQ 一键加群回退链（aboutSpec ③）：API 30+ 包可见性（getLaunchIntentForPackage） -->
+    <queries>
+        <package android:name="com.tencent.mobileqq" />
+        <package android:name="com.tencent.tim" />
+    </queries>
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <!-- specialUse 前台服务：承载常驻网关与任务调度（Android 15 下 dataSync 有 6 小时
+         配额且不得由 BOOT_COMPLETED 拉起，故单路 specialUse） -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- 悬浮窗保活（floatingWindowSpec）：SYSTEM_ALERT_WINDOW 特殊授权
+         （Settings.canDrawOverlays / ACTION_MANAGE_OVERLAY_PERMISSION；appop 无系统对话框） -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!-- 开机自启（可选项，默认关） -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <application
+        android:name=".app.NexApp"
+        android:allowBackup="false"
+        android:enableOnBackInvokedCallback="true"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.NexPort">
+
+        <!-- 单 Activity 引导 + 主界面（分步可视化引导在此内完成，可回退）；
+             enableOnBackInvokedCallback 为安装期静态标志（accessibilitySpec 预测性返回） -->
+        <activity
+            android:name=".app.MainActivity"
+            android:exported="true"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 应用内语言（appcompat per-app locales）：API<33 进程被杀后持久化必须声明
+             （settingsSpec general_language / 评审⑥） -->
+        <service
+            android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"
+            android:enabled="false"
+            android:exported="false">
+            <meta-data
+                android:name="autoStoreLocales"
+                android:value="true" />
+        </service>
+
+        <service
+            android:name=".app.GatewayService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <!-- Play 审核要点：specialUse 用途说明（本地常驻 AI 网关 + 任务调度） -->
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Local AI gateway core with task scheduler, serving 127.0.0.1 only" />
+        </service>
+
+        <!-- 悬浮窗保活（floatingWindowSpec）：普通服务、独立于 GatewayService、非前台；
+             进程内状态可视化，应用被杀随之消失（卡片副文案如实说明） -->
+        <service
+            android:name=".app.FloatingWindowService"
+            android:exported="false" />
+
+        <!-- 赞赏码分享（aboutSpec ②）：FileProvider 授权 cacheDir/shared/，
+             ACTION_SEND image/jpeg 经 getUriForFile（无新运行时权限） -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <receiver
+            android:name=".app.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

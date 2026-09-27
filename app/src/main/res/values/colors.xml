@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ===== 设计体系色板（浅色）=====
+         designSystem 规定：页面背景 #F2F2F7 / 卡片面 #FFFFFF；
+         文字四级与状态色均按「对页面背景 : 对卡片面」双表面对比度 ≥4.5:1 校验
+         （禁用态 ≥3:1）。values-night/ 提供深色对应值。 -->
+    <color name="nx_page_bg">#F2F2F7</color>
+    <color name="nx_card_surface">#FFFFFF</color>
+    <!-- 描边分隔 rgba(60,60,67,.29)（HIG separator） -->
+    <color name="nx_separator">#4A3C3C43</color>
+
+    <color name="nx_text_primary">#0F172A</color>
+    <color name="nx_text_secondary">#475569</color>
+    <color name="nx_text_tertiary">#5D6B7E</color>
+    <color name="nx_text_disabled">#64748B</color>
+    <color name="nx_accent">#005FCC</color>
+
+    <color name="nx_btn_primary_bg">#005FCC</color>
+    <color name="nx_btn_primary_fg">#FFFFFF</color>
+
+    <color name="nx_state_ok">#167A45</color>
+    <color name="nx_state_warn">#A05A10</color>
+    <color name="nx_state_err">#B91C1C</color>
+
+    <!-- 启动图/图标底（designSystem：#0B1220 不变） -->
+    <color name="ic_launcher_background">#0B1220</color>
+</resources>

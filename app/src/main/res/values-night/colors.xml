@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ===== 设计体系色板（深色）：页面背景 #0B1220 / 卡片面 #152036 ===== -->
+    <color name="nx_page_bg">#0B1220</color>
+    <color name="nx_card_surface">#152036</color>
+    <!-- 描边分隔 rgba(232,237,245,.14) -->
+    <color name="nx_separator">#24E8EDF5</color>
+
+    <color name="nx_text_primary">#E8EDF5</color>
+    <color name="nx_text_secondary">#A8B8CF</color>
+    <color name="nx_text_tertiary">#7C8DA8</color>
+    <color name="nx_text_disabled">#64748B</color>
+    <color name="nx_accent">#38BDF8</color>
+
+    <color name="nx_btn_primary_bg">#38BDF8</color>
+    <color name="nx_btn_primary_fg">#0B1220</color>
+
+    <color name="nx_state_ok">#34D399</color>
+    <color name="nx_state_warn">#FBBF24</color>
+    <color name="nx_state_err">#F87171</color>
+</resources>

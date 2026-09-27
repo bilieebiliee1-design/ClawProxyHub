@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 自定义主题 attr：Ui 构建器一律 MaterialColors.getColor(view, attr) 解析，
+         杜绝代码内硬编码色（designSystem 落地机制）。 -->
+    <attr name="nxPageBg" format="color" />
+    <attr name="nxCardSurface" format="color" />
+    <attr name="nxSeparator" format="color" />
+    <attr name="nxTextPrimary" format="color" />
+    <attr name="nxTextSecondary" format="color" />
+    <attr name="nxTextTertiary" format="color" />
+    <attr name="nxTextDisabled" format="color" />
+    <attr name="nxAccent" format="color" />
+    <attr name="nxBtnPrimaryBg" format="color" />
+    <attr name="nxBtnPrimaryFg" format="color" />
+    <attr name="nxStateOk" format="color" />
+    <attr name="nxStateWarn" format="color" />
+    <attr name="nxStateErr" format="color" />
+</resources>

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FileProvider 授权路径（aboutSpec ②）：赞赏码分享前先复制到 cacheDir/shared/ -->
+<paths>
+    <cache-path name="shared" path="shared/" />
+</paths>

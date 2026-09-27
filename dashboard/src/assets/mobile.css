@@ -1,0 +1,156 @@
+/* mobile.css — 面板移动端适配层（全局唯一入口，按断点 ≤768px 生效；桌面端零影响）。
+   断点与 useMediaQuery.MOBILE_BREAKPOINT 保持一致（侧栏抽屉/头部汉堡走 JS，其余走本文件）。
+   触控目标按 WCAG/平台惯例 ≥44px：控件高度经 TDesign 尺寸变量整体上浮（按钮/输入/选择/方形图标钮）。
+   在 main.ts 中于 TDesign 样式与 theme.css 之后引入，等特异性下覆盖生效。 */
+
+:root {
+  /* 旋转/滚动容器由浏览器原生处理，禁双击缩放延迟历史包袱 */
+  touch-action: manipulation;
+}
+
+/* ---------- ≤768px：移动端 ---------- */
+@media (max-width: 768px) {
+  /* 控件尺寸整体上浮（默认 32/24/40 → 40/32/48）：按钮、输入、选择、方形图标钮共用变量，
+     连带使头部图标钮/表格操作等触控目标达到 40px+。不动 --td-size-* 基阶，避免污染间距体系。 */
+  :root {
+    --td-comp-size-xs: 32px;
+    --td-comp-size-s: 36px;
+    --td-comp-size-m: 40px;
+    --td-comp-size-l: 44px;
+    --td-comp-size-xl: 48px;
+  }
+
+  /* 头部：安全区避让（刘海/挖孔；WebView 不上报 insets 时 env() 为 0，无副作用） */
+  .t-layout__header {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  /* 页面容器：收窄留白 + 底部安全区；杜绝页面级横向溢出（表格滚动在各表内部完成） */
+  .page {
+    padding: 12px 12px calc(20px + env(safe-area-inset-bottom));
+  }
+  .page-title {
+    font-size: 18px;
+  }
+  .page-header {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+  /* Settings 页自持页面容器/面板留白（scoped 0-2-0 特异性更高，用 !important 覆盖） */
+  .settings-page {
+    padding: 12px 12px calc(20px + env(safe-area-inset-bottom)) !important;
+  }
+  .settings-page .panel {
+    padding: 16px !important;
+  }
+
+  /* 表格：窄屏横向滑动（TDesign .t-table__content 自带 overflow:auto +
+     table-layout:fixed/min-width:100%，列宽合计超容器即出现内部横向滚动）。
+     这里只做触屏顺滑与操作链接放大，不改变表格结构。 */
+  .t-table__content {
+    -webkit-overflow-scrolling: touch;
+  }
+  /* 行内操作链接（编辑/删除）触控目标放大：视觉占位不变，热区上下扩展 */
+  .t-table .t-link {
+    padding: 10px 8px;
+  }
+
+  /* 弹窗全屏化：覆盖 width prop 的内联样式（!important），高度吃满并让 body 内滚 */
+  .t-dialog__position,
+  .t-dialog__position.t-dialog--top,
+  .t-dialog__position.t-dialog--center {
+    padding: 0;
+    align-items: stretch;
+  }
+  .t-dialog,
+  .c-dialog .t-dialog {
+    width: 100vw !important;
+    max-width: 100vw !important;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100vh;
+    max-height: 100dvh;
+    border-radius: 0 !important;
+    border-left: none;
+    border-right: none;
+    display: flex;
+    flex-direction: column;
+  }
+  .t-dialog__body {
+    flex: 1 1 auto;
+    min-height: 0;
+    /* 弹窗内容自适应后不应再横向平移：内容（网格/表单）超宽按裁剪处理而非出横向滚动，
+       与「窄屏不留横向滑动」目标一致（网格侧已 minmax(0,1fr)+min-width:0 自收缩） */
+    overflow-x: hidden;
+  }
+
+  /* 抽屉（运行日志/账号详情/插件市场等）：不放大只收拢——保留 size 内联宽度，
+     用 max-width 兜底防溢出（420px 抽屉在大点的窄屏不会被误放大） */
+  .t-drawer .t-drawer__content-wrapper--left,
+  .t-drawer .t-drawer__content-wrapper--right {
+    max-width: 92vw !important;
+  }
+
+  /* 表单：窄屏标签上置堆叠（覆盖 label-width 内联宽度），长标签允许换行 */
+  .t-form:not(.t-form-inline) .t-form__label {
+    float: none;
+    width: auto !important;
+    padding-right: 0;
+    white-space: normal;
+    display: block;
+  }
+  .t-form:not(.t-form-inline) .t-form__controls {
+    margin-left: 0 !important;
+  }
+
+  /* 过滤栏/表单控件：内联定宽在窄屏不得溢出 */
+  .page .t-input,
+  .page .t-select,
+  .page .t-date-range-picker,
+  .page .t-input-number,
+  .page .t-textarea {
+    max-width: 100%;
+  }
+  .page .t-input__wrap {
+    max-width: 100%;
+  }
+
+  /* 分页：窄屏换行而非溢出 */
+  .t-pagination {
+    flex-wrap: wrap;
+    row-gap: 4px;
+  }
+
+  /* Dashboard 栅格折叠：统计卡 6 列 → 2 列，趋势/分布双栏 → 单栏 */
+  .t-col-2 {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+  .t-col-8,
+  .t-col-4 {
+    flex: 0 0 100%;
+    max-width: 100%;
+  }
+
+  /* 侧栏抽屉菜单：条目加高便于触选 */
+  .t-default-menu .t-menu__item {
+    height: 48px;
+  }
+
+  /* 头部用户胶囊热区放大（scoped 样式特异性更高，用 !important 生效） */
+  .user-chip {
+    padding: 8px !important;
+  }
+
+  /* 通知/用户等浮层：320px 定宽在 320~360px 视口下收拢 */
+  .notif-menu {
+    width: min(320px, calc(100vw - 24px)) !important;
+  }
+}
+
+/* ---------- 极窄（≤360px）补充：日期区间等弹层余量 ---------- */
+@media (max-width: 360px) {
+  .t-popup {
+    max-width: 100vw;
+  }
+}
