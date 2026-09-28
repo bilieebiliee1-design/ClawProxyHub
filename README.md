@@ -107,3 +107,46 @@ Linux DO: [学AI上L站](https://linux.do)
 ## 许可证
 
 本项目基于 [AGPL-3.0](LICENSE) 协议开源。
+
+---
+
+## NexPort 安卓版（mobile-port）
+
+NexPort 是本项目（ClawProxyHub）的**安卓移植版**：同一个 Go 核心（网关、路由、账号、
+分组、密钥、任务调度、插件市场）搬进手机，应用内一键完成核心启动、插件安装、临时
+隧道与后台保活，面板内嵌 WebView，开箱即用；两端共享同一核心与同一套插件生态。
+
+- **安装包（APK）**：本仓库 Releases（或 `dist/` 发行目录），当前版本 v1.4.1（versionCode 6）
+- **完整源码**：本仓库 [`mobile-port` 分支](https://github.com/bilieebiliee1-design/ClawProxyHub/tree/mobile-port)（含构建脚本与内置插件对应源码，AGPL-3.0）
+
+### 为什么已有桌面端还要做移动端
+
+桌面端确实更适合重度使用；移动端解决的是另一件事——网关随手机走、不必为一台网关
+常开一台电脑。核心启动/插件安装/临时隧道/保活都在应用内一键完成，账号建档后还有
+自动配置引擎直接生成分组、路由和默认密钥，局域网内设备可直接把 base URL 指到手机。
+
+### 为什么选择插件化
+
+一体化对接方式下用户只能被动等作者更新；插件化把能力开放出来——你可以为自家在用的
+站点写一个 Lua 插件（免编译，打包成 `.cphplugin` 即装）。应用已在关于页内置
+**lua-plugin-dev 开发指南**（SKILL.md + 官方 autoclaw 示例 + hello-world 模板），
+把技能装进你自己的 AI agent 就能让 AI 帮忙写。写出好用的插件欢迎分享到
+QQ 群 **1124936153**。
+
+### 欢迎二改，但请依规
+
+欢迎 fork 二改，但必须依规（AGPL-3.0）：保留 LICENSE 全文与版权声明；保留对上游
+[ShadowSmallBaby/ClawProxyHub](https://github.com/ShadowSmallBaby/ClawProxyHub) 与本仓库的署名；
+以 AGPL-3.0 同样开放你修改后的完整源码；应用内关于页署名不可移除。觉得有帮助的话，
+欢迎给[本仓库](https://github.com/bilieebiliee1-design/ClawProxyHub)与
+[上游仓库](https://github.com/ShadowSmallBaby/ClawProxyHub)点个 Star。
+
+### 赞赏
+
+![赞赏码](https://raw.githubusercontent.com/bilieebiliee1-design/ClawProxyHub/mobile-port/docs/reward-qr.jpg)
+
+赞赏是为了获得更多持续维护的动力，如果收获足够的鼓励就可以一直为爱发电。赞赏后可进群
+（QQ 1124936153）联系作者进入 **VIP 会员群**：相关反馈会优先满足、获得持久的技术支持
+以及更多会员特权。不赞赏也完全可以正常使用全部功能。
+
+构建方法与更多细节见 [`mobile-port` 分支 README](https://github.com/bilieebiliee1-design/ClawProxyHub/blob/mobile-port/README.md)。
