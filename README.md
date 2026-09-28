@@ -116,7 +116,7 @@ NexPort 是本项目（ClawProxyHub）的**安卓移植版**：同一个 Go 核�
 分组、密钥、任务调度、插件市场）搬进手机，应用内一键完成核心启动、插件安装、临时
 隧道与后台保活，面板内嵌 WebView，开箱即用；两端共享同一核心与同一套插件生态。
 
-- **安装包（APK）**：本仓库 Releases（或 `dist/` 发行目录），当前版本 v1.4.1（versionCode 6）
+- **安装包（APK）**：本仓库 [Releases](https://github.com/bilieebiliee1-design/ClawProxyHub/releases) 提供（当前 v1.4.1，附 APK/AAB 与校验和）；也可从 [`mobile-port` 分支](https://github.com/bilieebiliee1-design/ClawProxyHub/tree/mobile-port)自行构建。
 - **完整源码**：本仓库 [`mobile-port` 分支](https://github.com/bilieebiliee1-design/ClawProxyHub/tree/mobile-port)（含构建脚本与内置插件对应源码，AGPL-3.0）
 
 ### 为什么已有桌面端还要做移动端
@@ -146,7 +146,7 @@ QQ 群 **1124936153**。
 ![赞赏码](https://raw.githubusercontent.com/bilieebiliee1-design/ClawProxyHub/mobile-port/docs/reward-qr.jpg)
 
 赞赏是为了获得更多持续维护的动力，如果收获足够的鼓励就可以一直为爱发电。赞赏后可进群
-（QQ 1124936153）联系作者进入 **VIP 会员群**：相关反馈会优先满足、获得持久的技术支持
-以及更多会员特权。不赞赏也完全可以正常使用全部功能。
+（QQ 1124936153）联系作者进入 **VIP 会员群**：相关反馈会优先满足、获得持久的技术支持。
+不赞赏也完全可以正常使用全部功能。
 
 构建方法与更多细节见 [`mobile-port` 分支 README](https://github.com/bilieebiliee1-design/ClawProxyHub/blob/mobile-port/README.md)。
