@@ -337,8 +337,9 @@
     <string name="support_motive_1">Your support is what keeps continuous maintenance going.</string>
     <string name="support_motive_2">With enough encouragement, the project can keep running on pure passion.</string>
     <string name="support_vip_title">VIP members group</string>
-    <string name="support_vip_text">After supporting, join the group and contact the author to enter the VIP members group — feedback there is prioritized, with lasting technical support and more member perks.</string>
+    <string name="support_vip_text">After supporting, join the group and contact the author to enter the VIP members group — feedback there is prioritized, with lasting technical support.</string>
     <string name="support_vip_qq_fmt">QQ group: %1$s</string>
+    <string name="support_free_hint">All features work fully without donating.</string>
     <!-- v1.4.1 ②: about page fork statement (AGPL-3.0 compliance + star guidance) -->
     <string name="about_fork_statement">Forks and modifications are welcome, but must comply with AGPL-3.0 (keep the LICENSE and attribution, keep the source open). Stars for this repository and the upstream one are appreciated.</string>
 

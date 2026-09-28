@@ -429,8 +429,9 @@ fun joinQQGroup(host: Fragment) {
  * FileProvider.getUriForFile → ACTION_SEND image/jpeg；manifest 已登记 provider +
  * res/xml/file_paths.xml cache-path shared/）。
  * v1.4.1 ①：大图下方新增赞赏文案卡——为什么赞赏（持续维护动力 / 为爱发电）与
- * VIP 会员群说明（反馈优先满足、持久技术支持、更多会员特权），附 QQ 群 1124936153
- * 加群入口（复用 joinQQGroup 四步回退链）。首页「一键赞赏」与关于页 banner 共用本页。
+ * VIP 会员群说明（反馈优先满足、持久技术支持），附 QQ 群 1124936153 加群入口
+ * （复用 joinQQGroup 四步回退链）与「不赞赏也完全可以正常使用全部功能」澄清。
+ * 首页「一键赞赏」与关于页 banner 共用本页。
  */
 class SupportPageFragment : Fragment() {
 
@@ -505,6 +506,10 @@ class SupportPageFragment : Fragment() {
             ).apply { topMargin = c.dp(8) })
             addView(ui.hint(c, c.getString(R.string.about_qq_hint)).apply {
                 setPadding(0, c.dp(6), 0, 0)
+            })
+            // 合规复审（v1.4.1 二轮）：补齐「不赞赏也完全可以正常使用」澄清，杜绝功能门控误解
+            addView(ui.hint(c, c.getString(R.string.support_free_hint)).apply {
+                setPadding(0, c.dp(2), 0, 0)
             })
         }, LinearLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT

@@ -80,7 +80,7 @@ ClawProxyHub 的架构本来就是插件化的：核心只管网关、路由、�
 
 ### 获取安装包
 
-- **安卓 APK**：本仓库 Releases（或 `dist/` 发行目录）提供；当前版本 v1.4.1（versionCode 6）。
+- **安卓 APK**：本仓库 [Releases](https://github.com/bilieebiliee1-design/ClawProxyHub/releases) 页提供（当前 v1.4.1，附 APK/AAB 与 SHA256 校验和）；也可以按下方步骤自行构建。
 - **桌面版**：上游 [ShadowSmallBaby/ClawProxyHub](https://github.com/ShadowSmallBaby/ClawProxyHub)。
 - **源码**：安卓端完整源码即本分支 `mobile-port`；桌面端在 `main` 分支（上游内容）。
 
@@ -134,7 +134,7 @@ go run ./cmd/nexcore   # env CPH_DATA_DIR=./data；curl 127.0.0.1:<port>/health
 
 赞赏是为了获得更多持续维护的动力——如果收获足够的鼓励，就可以一直为爱发电。赞赏后可
 进群（QQ 1124936153）联系作者进入 **VIP 会员群**：相关反馈会优先满足、获得持久的技术
-支持以及更多会员特权。当然，不赞赏也完全可以正常使用全部功能，提 issue 一样欢迎。
+支持。当然，不赞赏也完全可以正常使用全部功能，提 issue 一样欢迎。
 
 ## 核心与桌面版的差异（移植改造点）
 

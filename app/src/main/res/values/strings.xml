@@ -351,8 +351,9 @@
     <string name="support_motive_1">赞赏是为了获得更多持续维护的动力。</string>
     <string name="support_motive_2">如果收获足够的鼓励，就可以一直为爱发电。</string>
     <string name="support_vip_title">VIP 会员群</string>
-    <string name="support_vip_text">赞赏后可进群联系作者进入 VIP 会员群——相关反馈会优先满足、获得持久的技术支持以及更多会员特权。</string>
+    <string name="support_vip_text">赞赏后可进群联系作者进入 VIP 会员群——相关反馈会优先满足、获得持久的技术支持。</string>
     <string name="support_vip_qq_fmt">QQ 群：%1$s</string>
+    <string name="support_free_hint">不赞赏也完全可以正常使用全部功能。</string>
     <!-- v1.4.1 ②：关于页 fork 二改声明（AGPL-3.0 依规 + Star 引导） -->
     <string name="about_fork_statement">欢迎 fork 二改，但必须依规 AGPL-3.0（保留 LICENSE 与署名、开放源码）；也欢迎为本仓库与上游仓库点 Star。</string>
 
