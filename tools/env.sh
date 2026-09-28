@@ -38,7 +38,9 @@ cgo_env() {
 # ≥3 段管道会静默杀掉脚本（两段没事）；awk 退出码恒 0 也避开 `grep -v` 零行
 # 输出退出 1 的坑（对齐全合格时恰好 0 行，正踩中）。
 verify16k() {
-  local f="$1" out="$2"
+  local f="$1" out="${2:-}"
+  if [ -z "$out" ]; then out="$(mktemp)"; fi  # 单参调用（build-luahost/build-cloudflared）兜底临时文件，向后兼容
+  trap 'rm -f "$out"' RETURN
   "$NDK_READELF" -h "$f" > "$out" 2>&1
   local type; type="$(awk '/Type:/{print $2}' "$out" | head -1)"
   [ "$type" = "DYN" ] || { echo "FAIL $f: Type=$type (需 DYN/PIE)" >&2; return 1; }

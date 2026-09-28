@@ -14,7 +14,9 @@ set -euo pipefail
 
 cd "$CORE/luahost"
 for arch in arm64 amd64; do
-  out="$DIST/libluahost-android-$arch.so"
+  # 产物命名与 prepare-android.sh 消费口径一致：x86 架构用 x64 段（GOARCH 仍为 amd64）
+  tag=$([ "$arch" = arm64 ] && echo arm64 || echo x64)
+  out="$DIST/libluahost-android-$tag.so"
   cgo_env "$arch"
   "$GO" build -trimpath -ldflags "-s -w" -o "$out" .
   verify16k "$out"

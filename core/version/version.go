@@ -47,7 +47,11 @@ package version
 // 1.2.2（2026-09-25，本地修订）：修复隧道生命周期（Active 后误 cancel 致 cloudflared
 // 被 SIGKILL）与安卓边缘 SRV 解析死路（--edge 预解析，见 core/tunnel/edge.go），
 // 新增设置页「网关固定端口」配置项。
-var Core = "1.2.8"
+// 1.2.9（2026-09-29）：移植上游 fb6475c（gRPC 消息上限可经 env 配置，根治长会话 502）——
+// sdk 层新增 CPH_GRPC_MAX_MSG_SIZE（默认 64MB，下限 4MB 回退），Serve 的 GRPCServer
+// 闭包追加 MaxRecv/MaxSendMsgSize，plugmgr ClientConfig 追加 GRPCDialOptions
+// （MaxCallRecv/MaxCallSendMsgSize），两端读同一变量（读取逻辑在 SDK 层，插件须重编生效）。
+var Core = "1.2.9"
 
 // Mobile 安卓端产品版本（NexPort versionName）；构建时同样可经 ldflags 覆盖。
 // 1.4.1（2026-09-28）：随 APK v1.4.1（versionCode 6）同步——源码以 mobile-port 分支

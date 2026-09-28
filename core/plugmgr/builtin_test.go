@@ -11,9 +11,9 @@ import (
 // TestBuiltinRegistryAssets 内嵌清单与二进制版本同源：官方源 index 全量 10 个插件必须带 manifest 与 icon。
 func TestBuiltinRegistryAssets(t *testing.T) {
 	want := map[string]string{
-		"cline": "0.1.3", "commandcode": "0.1.1", "ima": "0.1.2",
-		"lobsterai": "0.1.5", "mirasim": "0.1.0", "newapi": "0.1.3",
-		"opencode": "0.1.3", "todofor": "0.1.0", "workbuddy": "0.1.6", "zcode": "0.1.0",
+		"cline": "0.1.5", "commandcode": "0.1.2", "ima": "0.1.3",
+		"lobsterai": "0.1.7", "mirasim": "0.1.1", "newapi": "0.1.4",
+		"opencode": "0.1.4", "todofor": "0.1.1", "workbuddy": "0.1.7", "zcode": "0.1.1",
 	}
 	got := map[string]string{}
 	for _, b := range BuiltinPlugins() {
@@ -60,7 +60,7 @@ func TestEnsureBuiltinsIn(t *testing.T) {
 	if err != nil {
 		t.Fatalf("lobsterai manifest 未落盘: %v", err)
 	}
-	if !strings.Contains(string(mf), `"version": "0.1.5"`) {
+	if !strings.Contains(string(mf), `"version": "0.1.7"`) {
 		t.Fatalf("lobsterai manifest 版本不符: %s", mf)
 	}
 	if _, err := os.Stat(filepath.Join(dir, "lobsterai", "icon.png")); err != nil {
@@ -129,7 +129,7 @@ func TestBuiltinInstallCheck(t *testing.T) {
 		t.Fatalf("内置且二进制在位应放行: %v", err)
 	}
 	err := m.builtinInstallCheck("chatjimmy") // 仓库在库但未上官方 index / 未内置
-	if err == nil || !strings.Contains(err.Error(), "未随 APK 内置") || !strings.Contains(err.Error(), "lobsterai v0.1.5") {
+	if err == nil || !strings.Contains(err.Error(), "未随 APK 内置") || !strings.Contains(err.Error(), "lobsterai v0.1.7") {
 		t.Fatalf("非内置应拒绝且列出可装清单, got: %v", err)
 	}
 	m2 := &Manager{dir: t.TempDir()} // 无 nativeLibDir
@@ -140,10 +140,10 @@ func TestBuiltinInstallCheck(t *testing.T) {
 
 // TestBuiltinVersionMismatch 版本差异文案；一致 / 非内置为空。
 func TestBuiltinVersionMismatch(t *testing.T) {
-	if got := builtinVersionMismatch("lobsterai", "0.1.4"); got == "" || !strings.Contains(got, "0.1.4") || !strings.Contains(got, "0.1.5") {
+	if got := builtinVersionMismatch("lobsterai", "0.1.6"); got == "" || !strings.Contains(got, "0.1.6") || !strings.Contains(got, "0.1.7") {
 		t.Fatalf("版本差异应给出说明, got: %q", got)
 	}
-	if got := builtinVersionMismatch("lobsterai", "0.1.5"); got != "" {
+	if got := builtinVersionMismatch("lobsterai", "0.1.7"); got != "" {
 		t.Fatalf("同版本应无文案, got: %q", got)
 	}
 	if got := builtinVersionMismatch("不存在", "1.0"); got != "" {

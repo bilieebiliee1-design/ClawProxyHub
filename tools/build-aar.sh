@@ -68,7 +68,10 @@ done
 rm -f "$elf16k"
 grep -q "minSdkVersion=\"$SHIP_MIN_SDK\"" "$tmp/AndroidManifest.xml" || { echo "AAR minSdk != $SHIP_MIN_SDK" >&2; exit 1; }
 # 绑定类在嵌套的 classes.jar 内（AAR 顶层只有 AndroidManifest/classes.jar/jni/...）
-unzip -l "$tmp/classes.jar" | grep -q "io/nexport/gateway/bridge/Bridge.class" \
+# 先落盘再 grep：`unzip -l | grep -q` 在 pipefail 下有 SIGPIPE 竞态（grep 命中即退出，
+# unzip 收 EPIPE 管道状态非 0，命中也会被误判缺失——本机 MSYS2 实测踩中）
+unzip -l "$tmp/classes.jar" > "$tmp/classes.txt"
+grep -q "io/nexport/gateway/bridge/Bridge.class" "$tmp/classes.txt" \
   || { echo "AAR 缺 Bridge 绑定类" >&2; exit 1; }
 rm -rf "$tmp"
 echo "AAR_OK $DIST/gateway-core.aar ($(du -h "$DIST/gateway-core.aar" | cut -f1))"
