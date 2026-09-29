@@ -6,6 +6,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -32,6 +33,16 @@ const (
 
 // version 插件版本：打包时经 -ldflags "-X main.version=..." 注入（源码直跑为 dev）。
 var version = "dev"
+
+// systemPromptJSON 内嵌网关 system 块数据（plugins/zcode/system_prompt.json，与上游
+// ClawProxyHubPlugins 0f52234 逐字同源）。安卓端插件 so 安装于 nativeLibraryDir
+// （W^X 只读），同目录不存在数据文件，磁盘读取必然失败 → zcode 对话 502（v1.4.2
+// 验收高危缺陷）；内嵌随 so 分发根治。对上游 0f52234 的唯一源码偏离（2026-09-29
+// 热修 v1.4.3）：systemBlocks 由「仅磁盘同目录读取」改为「内嵌优先、磁盘回退」
+// （桌面侧上游同目录分发行为经回退路径保持）。
+//
+//go:embed system_prompt.json
+var systemPromptJSON []byte
 
 func main() { sdk.Serve(&plugin{}) }
 
@@ -174,7 +185,8 @@ func (p *plugin) Handshake(ctx context.Context, req *pb.HandshakeRequest) (*pb.H
 // Login OAuth 设备码两步流程：State 空 = 发起（init → open_url），非空 = 轮询（poll）。
 // ---------- system 数据 ----------
 
-// systemBlocks 读内嵌 system_prompt.json（随包分发，缓存）。
+// systemBlocks 读内嵌 system_prompt.json（随 so 分发，缓存；磁盘同目录文件为
+// 桌面侧回退——安卓 nativeLibraryDir 无该文件，桌面保持上游同目录分发行为）。
 func (p *plugin) systemBlocks() (map[string]json.RawMessage, error) {
 	p.mu.Lock()
 	data, err := p.systemData, p.systemErr
@@ -182,13 +194,19 @@ func (p *plugin) systemBlocks() (map[string]json.RawMessage, error) {
 	if data != nil || err != nil {
 		return data, err
 	}
-	raw, readErr := os.ReadFile(filepath.Join(pluginDir(), systemPromptFile))
-	if readErr != nil {
-		readErr = fmt.Errorf("read %s: %w", systemPromptFile, readErr)
-		p.mu.Lock()
-		p.systemErr = readErr
-		p.mu.Unlock()
-		return nil, readErr
+	// 内嵌优先（go:embed 随 so 分发，安卓/桌面统一）；内嵌缺失时回退磁盘同目录
+	// 文件（embed 编译期保证正常路径不可达，保留以兼容上游桌面同目录分发口径）。
+	raw := systemPromptJSON
+	if len(raw) == 0 {
+		disk, readErr := os.ReadFile(filepath.Join(pluginDir(), systemPromptFile))
+		if readErr != nil {
+			readErr = fmt.Errorf("read %s: %w", systemPromptFile, readErr)
+			p.mu.Lock()
+			p.systemErr = readErr
+			p.mu.Unlock()
+			return nil, readErr
+		}
+		raw = disk
 	}
 	var m map[string]json.RawMessage
 	if err := json.Unmarshal(raw, &m); err != nil {
@@ -203,7 +221,7 @@ func (p *plugin) systemBlocks() (map[string]json.RawMessage, error) {
 	return m, nil
 }
 
-// pluginDir 插件二进制所在目录（system_prompt.json 随包同目录分发）。
+// pluginDir 插件二进制所在目录（桌面侧回退：上游同目录分发口径）。
 func pluginDir() string {
 	exe, err := os.Executable()
 	if err != nil {

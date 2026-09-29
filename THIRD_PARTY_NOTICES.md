@@ -132,6 +132,13 @@ com.google.guava:listenablefuture:1.0；org.jetbrains:annotations:13.0。
 
 #### 安卓侧变更记录（合规复审追踪）
 
+- **v1.4.3（2026-09-29 热修）**：**对上游 ClawProxyHubPlugins 0f52234 的唯一源码偏离**——
+  `core/plugmgr/builtin/zcode/main.go` systemBlocks 由「仅磁盘同目录读取
+  system_prompt.json」改为「go:embed 内嵌优先、磁盘回退」。缺陷根因：安卓端插件 so
+  安装于 nativeLibraryDir（W^X 只读），同目录无数据文件，磁盘读取必然失败 → zcode
+  对话 502（v1.4.2 验收高危缺陷）。内嵌文件 `system_prompt.json` 与上游 0f52234
+  blob 逐字同源（md5 affd44b103684cf66c61dea67c9e5e45）；libplugin_zcode 双 ABI
+  重编（版本仍 0.1.1，manifest 未动），其余 9 插件与依赖版本无变化。
 - **v1.4.2（2026-09-29）**：Go 侧依赖版本同步（本轮为版本表勘误轮，无许可/坐标变化）——
   §一 ClawProxyHub v1.2.1 → **v1.2.2**（core/go.mod:6 锚定；移植上游 fb6475c gRPC 消息
   上限修复，libgojni/libplugin_*/libluahost 均实编 v1.2.2，`go version -m` 实证）；
