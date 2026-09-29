@@ -9,9 +9,12 @@
 # PLUGINS_REPO=<插件仓> 不再改变构建来源，仅作防漂移校验（比对各插件 manifest 一致）。
 #
 # 清单来源：应用「官方」插件源 index.json（ClawProxyHubPlugins 仓库根 index.json，
-# 全量 10 个，均为 Go 插件；仓库另有 chatjimmy/codebuff 等 11 个未发布项 + Lua
-# autoclaw，未上 index 不内置）。版本取各插件 manifest.json（builtin 源码与二进制
-# 同源同版本，市场比对逻辑见 adminapi/marketplace.go）。
+# 全量 25 个 Go 插件 @0f52234，chatjimmy/codebuff/doubao/gorkcli/improvado/joycode/
+# mimo/notion/postman/puter/qoder 11 个此前未上 index 的项已全部发布 + codearts/
+# loomy/raccoon/trae 4 个新插件；另有 Lua autoclaw 0.1.1，动态安装不受 noexec 限制，
+# 不内置）。版本取各插件 manifest.json（builtin 源码与二进制同源同版本，市场比对
+# 逻辑见 adminapi/marketplace.go）。唯一源码偏离：zcode/main.go 内嵌 system_prompt.json
+# （安卓 nativeLibraryDir 只读，磁盘读取必失败，v1.4.3 热修，见该文件头注）。
 #
 # 产出（双布局，字节同源）：
 #   A. jniLibs 规范（prepare-android.sh 消费口径，ABI 段为 GOARCH 口径）：
@@ -20,7 +23,7 @@
 #   B. ask 规范 <abi> 字面目录（arm64 / x64，libplugin_<名>_<abi>.so）：
 #     core/dist/plugins/arm64/libplugin_<名>_arm64.so
 #     core/dist/plugins/x64/libplugin_<名>_x64.so
-#   SHA256SUMS.txt 覆盖双布局全部 40 个 so。
+#   SHA256SUMS.txt 覆盖双布局全部 100 个 so（25 插件 × 2 ABI × 2 布局）。
 #
 # 【必须 CGO_ENABLED=1 + NDK clang，不能照搬上游 pack 的纯 Go】与 build-luahost.sh
 # 同理：安卓上 Go 内建 resolver 无 /etc/resolv.conf → DNS 死路（见 tunnel/edge.go 头注），
@@ -41,8 +44,9 @@ set -euo pipefail
 REPO="${PLUGINS_REPO:-}"
 OUT="$DIST/plugins"
 BUILTIN="$CORE/plugmgr/builtin"
-# 官方源 index.json 实际清单（2026-09-26 快照，10 条，全 Go；更新 index 后同步此列表）
-PLUGINS="cline commandcode ima lobsterai mirasim newapi opencode todofor workbuddy zcode"
+# 官方源 index.json 实际清单（2026-09-29 快照 @0f52234，25 条 Go；Lua autoclaw 不内置。
+# 更新 index 后同步此列表）
+PLUGINS="chatjimmy cline codearts codebuff commandcode doubao gorkcli ima improvado joycode lobsterai loomy mimo mirasim newapi notion opencode postman puter qoder raccoon todofor trae workbuddy zcode"
 
 manifest_version() { awk -F'"' '/"version"/{print $4; exit}' "$1"; }
 
@@ -85,13 +89,13 @@ if [ -n "$REPO" ]; then
     [ -f "$rmf" ] || { echo "PLUGINS_REPO 缺 $rmf" >&2; exit 1; }
     diff "$rmf" "$BUILTIN/$name/manifest.json" >/dev/null || { echo "manifest 漂移: $name（插件仓与正树不一致）" >&2; exit 1; }
   done
-  echo "PLUGINS_REPO manifest 一致性校验通过（10/10）"
+  echo "PLUGINS_REPO manifest 一致性校验通过（25/25）"
 fi
 
 # SHA256SUMS.txt 覆盖双布局全部产物（abi 相对路径），供组包侧校验
 cd "$OUT"
 find arm64-v8a x86_64 arm64 x64 -name 'libplugin_*.so' -type f | LC_ALL=C sort | xargs sha256sum > SHA256SUMS.txt
-echo "sha256 manifest: $OUT/SHA256SUMS.txt（双布局 20×2=40 条）"
+echo "sha256 manifest: $OUT/SHA256SUMS.txt（双布局 25×2×2=100 条）"
 
 echo "PLUGIN_BUILD_OK"
 ls "$OUT" "$OUT/arm64-v8a" "$OUT/x86_64" "$OUT/arm64" "$OUT/x64"

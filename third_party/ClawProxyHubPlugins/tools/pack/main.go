@@ -4,7 +4,7 @@
 //
 //	go run ./tools/pack                                   # 全部插件 → dist/
 //	go run ./tools/pack -only lobsterai                   # 只打包指定插件
-//	go run ./tools/pack -skip lobsterai                   # 跳过已发布版本，索引条目沿用现有 index.json
+//	go run ./tools/pack -skip lobsterai                   # 跳过已发布版本，索引条目沿用现有 index.json（缺条目则从 Release 资产恢复）
 //	go run ./tools/pack -install ../ClawProxyHub/data/plugins   # 本地开发：编译当前平台并装入核心插件目录
 //
 // 包格式（zip）：manifest.json + 图标 + plugin-<os>-<arch>[.exe]（多平台）。
@@ -24,6 +24,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"time"
@@ -113,10 +114,15 @@ func run(out, baseURL, indexPath string, only, skip map[string]bool, install str
 		if skip[name] {
 			e, ok := existing[name]
 			if !ok {
-				fmt.Fprintf(os.Stderr, "warn: %s skipped but absent from %s, dropped from index\n", name, indexPath)
-				continue
+				// 基线缺条目（index.json 曾被破坏）：从已发布 Release 资产恢复，禁止静默丢条目
+				e, err = restoreFromRelease(name, baseURL)
+				if err != nil {
+					return fmt.Errorf("%s: %w", name, err)
+				}
+				fmt.Printf("restored %s (v%s) from release\n", name, e.Version)
+			} else {
+				fmt.Printf("skip %s (keep %s v%s)\n", name, name, e.Version)
 			}
-			fmt.Printf("skip %s (keep %s v%s)\n", name, name, e.Version)
 			entries = append(entries, e)
 			continue
 		}
@@ -235,8 +241,39 @@ func pack(name, out, baseURL string) (indexEntry, error) {
 	}, nil
 }
 
+// restoreFromRelease 从已发布 Release 资产恢复索引条目：下载包 → 实算 sha256 →
+// 元数据从包内 manifest 重建（发布后版本不可变，资产即真源）。
+func restoreFromRelease(name, baseURL string) (indexEntry, error) {
+	mf, err := loadManifest(name)
+	if err != nil {
+		return indexEntry{}, err
+	}
+	url := fmt.Sprintf("%s/%s-v%s/%s-%s.cphplugin", strings.TrimSuffix(baseURL, "/"), name, mf.Version, name, mf.Version)
+	tmp, err := os.MkdirTemp("", "cph-restore-"+name+"-")
+	if err != nil {
+		return indexEntry{}, err
+	}
+	defer os.RemoveAll(tmp)
+	pkg := filepath.Join(tmp, filepath.Base(url))
+	cmd := exec.Command("gh", "release", "download", name+"-v"+mf.Version, "--pattern", filepath.Base(url), "--output", pkg)
+	cmd.Stdout, cmd.Stderr = os.Stdout, os.Stderr
+	if err := cmd.Run(); err != nil {
+		return indexEntry{}, fmt.Errorf("download release asset: %w", err)
+	}
+	sum, err := fileSHA256(pkg)
+	if err != nil {
+		return indexEntry{}, err
+	}
+	return indexEntry{
+		Name: mf.Name, Version: mf.Version, Author: mf.Author, Label: mf.Label,
+		Runtime:     mf.Runtime,
+		DownloadURL: url,
+		SHA256:      sum,
+	}, nil
+}
+
 // installDev 开发安装：当前平台二进制 + manifest + 图标 → <dir>/<name>/（与核心目录约定一致）。
-// lua 插件注入本地编译的 luahost 作为 plugin-<os>-<arch>，脚本原样落地（方案 A 的开发版）。
+// lua 插件注入本地编译的 luahost 作为 plugin-<os>-<arch>，脚本原样落地。
 func installDev(name, dir string) error {
 	mf, err := loadManifest(name)
 	if err != nil {
@@ -296,6 +333,9 @@ func loadManifest(name string) (*manifest, error) {
 	}
 	if mf.Version == "" || mf.Author == "" {
 		return nil, fmt.Errorf("manifest.json requires version and author")
+	}
+	if mf.Label["zh"] == "" || mf.Label["en"] == "" {
+		return nil, fmt.Errorf("manifest.json requires label.zh and label.en")
 	}
 	if mf.Icon != "" {
 		if _, err := os.Stat(filepath.Join(root, name, mf.Icon)); err != nil {
@@ -457,7 +497,7 @@ func copyFile(src, dst string) error {
 
 func csv(s string) map[string]bool {
 	out := map[string]bool{}
-	for _, p := range strings.Split(s, ",") {
+	for p := range strings.SplitSeq(s, ",") {
 		if p = strings.TrimSpace(p); p != "" {
 			out[p] = true
 		}
@@ -466,10 +506,5 @@ func csv(s string) map[string]bool {
 }
 
 func contains(list []string, s string) bool {
-	for _, v := range list {
-		if v == s {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(list, s)
 }

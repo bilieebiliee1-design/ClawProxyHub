@@ -10,7 +10,8 @@
 #   jniLibs 才能精确控制 useLegacyPackaging 与 ABI 目录命名。AAR 本体仍是规范产物。
 #   - luahost / cloudflared 二进制 → jniLibs/<abi>/libluahost.so、libcloudflared.so
 #     （useLegacyPackaging=true 时安装期解入 nativeLibraryDir，exec 三通道的唯一来源）
-#   - 内置 Go 插件（build-plugins.sh 产物，官方源 index 全量 10 个）→ jniLibs/<abi>/libplugin_<名>_<abi>.so
+#   - 内置 Go 插件（build-plugins.sh 产物，官方源 index 全量 25 个 Go 插件 @0f52234，
+#     Lua autoclaw 不内置）→ jniLibs/<abi>/libplugin_<名>_<abi>.so
 #     （插件安卓化方案 ①：核心在 GOOS=android 下按 GOARCH 推导回查 nativeLibraryDir/
 #     libplugin_<名>_<abi>.so，manifest/icon 由核心 plugmgr/builtin 内嵌，无需随 assets 分发）
 #   - LICENSE / THIRD_PARTY_NOTICES.md → assets/（关于页 AGPL 合规展示）

@@ -8,12 +8,17 @@ import (
 	"testing"
 )
 
-// TestBuiltinRegistryAssets 内嵌清单与二进制版本同源：官方源 index 全量 10 个插件必须带 manifest 与 icon。
+// TestBuiltinRegistryAssets 内嵌清单与二进制版本同源：官方源 index 全量 25 个 Go 插件
+//（@0f52234，Lua autoclaw 动态安装不内置）必须带 manifest 与 icon。
 func TestBuiltinRegistryAssets(t *testing.T) {
 	want := map[string]string{
-		"cline": "0.1.5", "commandcode": "0.1.2", "ima": "0.1.3",
-		"lobsterai": "0.1.7", "mirasim": "0.1.1", "newapi": "0.1.4",
-		"opencode": "0.1.4", "todofor": "0.1.1", "workbuddy": "0.1.7", "zcode": "0.1.1",
+		"chatjimmy": "0.1.1", "cline": "0.1.5", "codearts": "0.1.0", "codebuff": "0.1.1",
+		"commandcode": "0.1.2", "doubao": "0.1.1", "gorkcli": "0.1.1", "ima": "0.1.3",
+		"improvado": "0.1.1", "joycode": "0.1.1", "lobsterai": "0.1.7", "loomy": "0.1.1",
+		"mimo": "0.1.1", "mirasim": "0.1.1", "newapi": "0.1.4", "notion": "0.1.1",
+		"opencode": "0.1.4", "postman": "0.1.1", "puter": "0.1.1", "qoder": "0.1.1",
+		"raccoon": "0.1.0", "todofor": "0.1.1", "trae": "0.1.0", "workbuddy": "0.1.7",
+		"zcode": "0.1.1",
 	}
 	got := map[string]string{}
 	for _, b := range BuiltinPlugins() {
@@ -128,7 +133,7 @@ func TestBuiltinInstallCheck(t *testing.T) {
 	if err := m.builtinInstallCheck("newapi"); err != nil {
 		t.Fatalf("内置且二进制在位应放行: %v", err)
 	}
-	err := m.builtinInstallCheck("chatjimmy") // 仓库在库但未上官方 index / 未内置
+	err := m.builtinInstallCheck("hello-world") // 官方 index 之外的插件（QA 遗留样例）
 	if err == nil || !strings.Contains(err.Error(), "未随 APK 内置") || !strings.Contains(err.Error(), "lobsterai v0.1.7") {
 		t.Fatalf("非内置应拒绝且列出可装清单, got: %v", err)
 	}

@@ -39,10 +39,13 @@ klauspost/compress（BSD-3）、gopacket（BSD-3）。完整清单见 cloudflare
 
 ## 一之二、内置 Go 插件（APK 预打包，来源仓库 ClawProxyHubPlugins）
 
-APK 内预打包的官方源 index 全量 10 个内置 Go 插件（cline 0.1.5 / commandcode 0.1.2 / ima 0.1.3 /
-lobsterai 0.1.7 / mirasim 0.1.1 / newapi 0.1.4 / opencode 0.1.4 / todofor 0.1.1 / workbuddy 0.1.7 /
-zcode 0.1.1，`core/dist/plugins/<abi>/libplugin_<名>_<abi>.so` → `app/src/main/jniLibs/<abi>/`，经
-`tools/build-plugins.sh` 交叉编译）的**来源仓库**：
+APK 内预打包的官方源 index 全量 25 个内置 Go 插件（chatjimmy 0.1.1 / cline 0.1.5 / codearts 0.1.0 /
+codebuff 0.1.1 / commandcode 0.1.2 / doubao 0.1.1 / gorkcli 0.1.1 / ima 0.1.3 / improvado 0.1.1 /
+joycode 0.1.1 / lobsterai 0.1.7 / loomy 0.1.1 / mimo 0.1.1 / mirasim 0.1.1 / newapi 0.1.4 /
+notion 0.1.1 / opencode 0.1.4 / postman 0.1.1 / puter 0.1.1 / qoder 0.1.1 / raccoon 0.1.0 /
+todofor 0.1.1 / trae 0.1.0 / workbuddy 0.1.7 / zcode 0.1.1，上游 @0f52234；
+`core/dist/plugins/<abi>/libplugin_<名>_<abi>.so` → `app/src/main/jniLibs/<abi>/`，经
+`tools/build-plugins.sh` 交叉编译；Lua 插件 autoclaw 不预打包、走市场动态安装）的**来源仓库**：
 
 - **github.com/ShadowSmallBaby/ClawProxyHubPlugins**（https://github.com/ShadowSmallBaby/ClawProxyHubPlugins ）
   —— **AGPL-3.0**（仓库根 `LICENSE` 为 GNU Affero General Public License v3.0 全文，已本地核实）。
@@ -132,6 +135,15 @@ com.google.guava:listenablefuture:1.0；org.jetbrains:annotations:13.0。
 
 #### 安卓侧变更记录（合规复审追踪）
 
+- **v1.4.4（2026-09-29）**：**§一之二 内置 Go 插件 10 → 25**——官方源 index 全量 25 个
+  Go 插件（上游 ClawProxyHubPlugins @0f52234）全部随 APK 预打包，新增 15 个
+  （chatjimmy 0.1.1 / codearts 0.1.0 / codebuff 0.1.1 / doubao 0.1.1 / gorkcli 0.1.1 /
+  improvado 0.1.1 / joycode 0.1.1 / loomy 0.1.1 / mimo 0.1.1 / notion 0.1.1 /
+  postman 0.1.1 / puter 0.1.1 / qoder 0.1.1 / raccoon 0.1.0 / trae 0.1.0），原 10 个
+  版本不变；内嵌清单（core/plugmgr/builtin，含 manifest/icon）与 libplugin_* 双 ABI
+  产物同源重编。新增插件仅依赖 §一之二 既表组件（SDK / shared / grpc 等），无新许可
+  条目；Lua 插件 autoclaw 0.1.1 仍走市场动态安装、不预打包。市场「安卓端暂不支持」
+  标记随核心内置数据自动消失。应用逻辑无其他变化。
 - **v1.4.3（2026-09-29 热修）**：**对上游 ClawProxyHubPlugins 0f52234 的唯一源码偏离**——
   `core/plugmgr/builtin/zcode/main.go` systemBlocks 由「仅磁盘同目录读取
   system_prompt.json」改为「go:embed 内嵌优先、磁盘回退」。缺陷根因：安卓端插件 so

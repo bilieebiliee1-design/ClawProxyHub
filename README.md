@@ -6,7 +6,7 @@
 
 NexPort 安卓版把 ClawProxyHub 的 Go 核心（网关、路由、账号、分组、密钥、任务调度、市场）
 原样搬进一部手机：应用内完成引导、启动、装插件、开临时隧道、后台保活，面板就长在
-WebView 里。当前版本 **v1.4.3（versionCode 8）**。
+WebView 里。当前版本 **v1.4.4（versionCode 9）**。
 
 ---
 
@@ -81,7 +81,7 @@ ClawProxyHub 的架构本来就是插件化的：核心只管网关、路由、�
 
 ### 获取安装包
 
-- **安卓 APK**：本仓库 [Releases](https://github.com/bilieebiliee1-design/ClawProxyHub/releases) 页提供（当前 v1.4.3，附 APK/AAB 与 SHA256 校验和）；也可以按下方步骤自行构建。
+- **安卓 APK**：本仓库 [Releases](https://github.com/bilieebiliee1-design/ClawProxyHub/releases) 页提供（当前 v1.4.4，附 APK/AAB 与 SHA256 校验和）；也可以按下方步骤自行构建。
 - **桌面版**：上游 [ShadowSmallBaby/ClawProxyHub](https://github.com/ShadowSmallBaby/ClawProxyHub)。
 - **源码**：安卓端完整源码即本分支 `mobile-port`；桌面端在 `main` 分支（上游内容）。
 

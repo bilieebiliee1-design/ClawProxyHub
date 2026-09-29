@@ -68,7 +68,19 @@ func (h *luahost) Handshake(ctx context.Context, req *pb.HandshakeRequest) (*pb.
 			return &pb.HandshakeResponse{Error: e}, nil
 		}
 		if mt := tblField(t, "manifest"); mt != nil {
-			return &pb.HandshakeResponse{Manifest: manifestFromTable(mt)}, nil
+			pbm := manifestFromTable(mt)
+			// 身份由宿主管理（脚本不管 manifest，autoclaw v0.1.1 起握手不再回身份字段）：
+			// name/version/author 以 manifest.json 为准，协议版本以协商版本为准
+			// （与上游 ClawProxyHub 62aa86f / v1.3.0 hosts/luahost 同步）。
+			if mf, ferr := loadManifest(h.dir); ferr == nil && mf.Name != "" {
+				pbm.Name = mf.Name
+				if mf.Version != "" {
+					pbm.Version = mf.Version
+				}
+				pbm.Author = mf.Author
+			}
+			pbm.ProtocolVersion = req.ProtocolVersion
+			return &pb.HandshakeResponse{Manifest: pbm}, nil
 		}
 	}
 	mf, ferr := loadManifest(h.dir)

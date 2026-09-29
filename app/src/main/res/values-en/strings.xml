@@ -66,7 +66,7 @@
     <!-- ===== Onboarding Step3: guide ===== -->
     <string name="onboard_title_guide">Quick Start</string>
     <string name="guide_plugins_title">Meet the plugins</string>
-    <string name="guide_plugins_text">Open the panel → Plugins → Marketplace. All 10 Go plugins from the official source index are pre-bundled with the APK and load automatically at core start — no installation needed. Lua plugins can be installed online via Marketplace / Custom source / Offline upload.</string>
+    <string name="guide_plugins_text">Open the panel → Plugins → Marketplace. All 25 Go plugins from the official source index are pre-bundled with the APK and load automatically at core start — no installation needed. Lua plugins can be installed online via Marketplace / Custom source / Offline upload.</string>
     <string name="guide_tunnel_title">Tunnel is OFF by default</string>
     <string name="guide_tunnel_text">The tunnel exposes the gateway API on a public ephemeral domain; cph-* keys are the only defense. Enable it on the home screen only when needed and disconnect after use.</string>
     <string name="guide_bg_title">Keep running in background</string>
@@ -87,7 +87,7 @@
     <string name="guide_lan_text">Besides 127.0.0.1, the core also listens on the device\'s LAN address at the same port by default: only /v1 (API-key auth enforced) and /health are exposed; the panel and admin API are never reachable. The LAN endpoint is shown on Home; LAN listening can be disabled in the panel settings.</string>
 
     <string name="guide_goplugin_title">About Go plugins</string>
-    <string name="guide_goplugin_text">This build pre-bundles all 10 Go plugins from the official source index: cline, commandcode, ima, lobsterai, mirasim, newapi, opencode, todofor, workbuddy and zcode — loaded automatically at core start, no installation needed. Android forbids executing downloaded binaries from app data (targetSdk 29+ noexec), so Go plugins cannot be installed/upgraded online; they update with the APK.</string>
+    <string name="guide_goplugin_text">This build pre-bundles all 25 Go plugins from the official source index: chatjimmy, cline, codearts, codebuff, commandcode, doubao, gorkcli, ima, improvado, joycode, lobsterai, loomy, mimo, mirasim, newapi, notion, opencode, postman, puter, qoder, raccoon, todofor, trae, workbuddy and zcode — loaded automatically at core start, no installation needed. Android forbids executing downloaded binaries from app data (targetSdk 29+ noexec), so Go plugins cannot be installed/upgraded online; they update with the APK.</string>
     <string name="guide_goplugin_preview">The panel “Plugins → Marketplace” annotates Android availability per plugin: bundled Go plugins show their bundled version with no upgrade button; non-bundled Go plugins are marked not-installable with the reason; Lua plugins are unrestricted and install online as usual.</string>
 
     <!-- Step-4 keep-alive cards (v1.4.0 ⑦) -->
@@ -448,7 +448,7 @@
         <item>Three entries: marketplace / custom source / offline upload</item>
     </string-array>
     <string-array name="guide_s3_subs">
-        <item>All 10 Go plugins from the official source index are pre-bundled and work out of the box</item>
+        <item>All 25 Go plugins from the official source index are pre-bundled and work out of the box</item>
         <item>Lua plugins install online on Android; Go plugins cannot — they update with the APK</item>
     </string-array>
     <string name="guide_s4_title">Section 4 · Configure upstream &amp; keys</string>
