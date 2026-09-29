@@ -54,6 +54,9 @@ package version
 var Core = "1.2.9"
 
 // Mobile 安卓端产品版本（NexPort versionName）；构建时同样可经 ldflags 覆盖。
+// 1.4.2（2026-09-29）：随 APK v1.4.2（versionCode 7）同步——核心 AAR 换新（SDK
+// v1.2.2 gRPC 消息上限修复 + 10 插件全量重编 + luahost 重编），关于页「核心版本」
+// 行与隧道落地页徽标统一 1.4.2（验收④回归口径：AAR 内 Mobile 必须随产品版本同升）。
 // 1.4.1（2026-09-28）：随 APK v1.4.1（versionCode 6）同步——源码以 mobile-port 分支
 // 公开发布（fork 仓库），关于页署名/EULA 同步更新。
 // 1.4.0（2026-09-27）：随 APK v1.4.0（versionCode 5）同步——首页/关于页版本行、
@@ -63,7 +66,7 @@ var Core = "1.2.9"
 // 版本徽标与关于页、APK versionName 统一口径（验收回归：AAR 内 Mobile 滞留 1.1.0，
 // bridge Version() 串三处不一致）。
 // 1.1.0（2026-09-26）：随 APK v1.1.0（versionCode 2）全面改版同步。
-var Mobile = "1.4.1"
+var Mobile = "1.4.2"
 
 // String 完整版本串："mobile (core x)" 形态，供 bridge.Version() 与关于页展示。
 func String() string { return Mobile + " (core " + Core + ")" }

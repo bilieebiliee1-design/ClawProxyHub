@@ -15,7 +15,7 @@ core）与 `core/go.mod`、`core/luahost/go.mod` 为准；安卓侧以 AAB
 
 | 组件 | 版本（发行构建解析） | 许可 | 用途 |
 | --- | --- | --- | --- |
-| github.com/ShadowSmallBaby/ClawProxyHub | v1.2.1（上游核心） | AGPL-3.0 | 内核 fork 基底 |
+| github.com/ShadowSmallBaby/ClawProxyHub | v1.2.2（上游核心） | AGPL-3.0 | 内核 fork 基底 |
 | github.com/hashicorp/go-plugin | v1.8.0 | MPL-2.0（Copyright IBM Corp.） | 插件子进程运行时 |
 | google.golang.org/grpc | v1.83.2 | Apache-2.0 | 插件/宿主 RPC |
 | google.golang.org/protobuf | v1.36.12 | BSD-3-Clause（Go 作者） | 契约序列化 |
@@ -39,9 +39,9 @@ klauspost/compress（BSD-3）、gopacket（BSD-3）。完整清单见 cloudflare
 
 ## 一之二、内置 Go 插件（APK 预打包，来源仓库 ClawProxyHubPlugins）
 
-APK 内预打包的官方源 index 全量 10 个内置 Go 插件（cline 0.1.3 / commandcode 0.1.1 / ima 0.1.2 /
-lobsterai 0.1.5 / mirasim 0.1.0 / newapi 0.1.3 / opencode 0.1.3 / todofor 0.1.0 / workbuddy 0.1.6 /
-zcode 0.1.0，`core/dist/plugins/<abi>/libplugin_<名>_<abi>.so` → `app/src/main/jniLibs/<abi>/`，经
+APK 内预打包的官方源 index 全量 10 个内置 Go 插件（cline 0.1.5 / commandcode 0.1.2 / ima 0.1.3 /
+lobsterai 0.1.7 / mirasim 0.1.1 / newapi 0.1.4 / opencode 0.1.4 / todofor 0.1.1 / workbuddy 0.1.7 /
+zcode 0.1.1，`core/dist/plugins/<abi>/libplugin_<名>_<abi>.so` → `app/src/main/jniLibs/<abi>/`，经
 `tools/build-plugins.sh` 交叉编译）的**来源仓库**：
 
 - **github.com/ShadowSmallBaby/ClawProxyHubPlugins**（https://github.com/ShadowSmallBaby/ClawProxyHubPlugins ）
@@ -54,7 +54,7 @@ zcode 0.1.0，`core/dist/plugins/<abi>/libplugin_<名>_<abi>.so` → `app/src/ma
 
 | 组件 | 版本（发行构建解析） | 许可 | 用途 |
 | --- | --- | --- | --- |
-| github.com/ShadowSmallBaby/ClawProxyHub | v1.2.0 | AGPL-3.0 | 上游核心库（插件宿主 API/共享类型） |
+| github.com/ShadowSmallBaby/ClawProxyHub | v1.2.2（经 gateway-mobile `core/go.mod:6` 锚定解析） | AGPL-3.0 | 上游核心库（插件宿主 API/共享类型） |
 | github.com/gorilla/websocket | v1.5.3 | BSD-2-Clause（Copyright 2013 The Gorilla WebSocket Authors；缓存 LICENSE 原文核实） | WebSocket 客户端 |
 | github.com/warpdotdev/warp-proto-apis/apis/multi_agent | v0.0.0-20260917164411-f5c1878026bc | **AGPL-3.0**（上游仓库 LICENSE.md 为 GNU Affero General Public License v3，Copyright (C) 2020-2026 Denver Technologies, Inc.——经 GitHub API 于 2026-09-26 本地核实；该许可文件未随 go module 归档分发，归档内仅 go.mod/go.sum/.proto/生成代码，使用方需自上游仓库获取许可全文） | lobsterai 插件上游协议 stub |
 | golang.org/x/crypto | v0.57.0 | BSD-3-Clause（Go 作者） | 加密原语 |
@@ -132,6 +132,13 @@ com.google.guava:listenablefuture:1.0；org.jetbrains:annotations:13.0。
 
 #### 安卓侧变更记录（合规复审追踪）
 
+- **v1.4.2（2026-09-29）**：Go 侧依赖版本同步（本轮为版本表勘误轮，无许可/坐标变化）——
+  §一 ClawProxyHub v1.2.1 → **v1.2.2**（core/go.mod:6 锚定；移植上游 fb6475c gRPC 消息
+  上限修复，libgojni/libplugin_*/libluahost 均实编 v1.2.2，`go version -m` 实证）；
+  §一之二 10 个内置插件版本号随 manifest 全量 bump（cline 0.1.5 / commandcode 0.1.2 /
+  ima 0.1.3 / lobsterai 0.1.7 / mirasim 0.1.1 / newapi 0.1.4 / opencode 0.1.4 /
+  todofor 0.1.1 / workbuddy 0.1.7 / zcode 0.1.1）；§一之二 插件模块 ClawProxyHub
+  依赖 v1.2.0 → v1.2.2（经 core/go.mod 锚定解析，同上实证）。
 - **v1.4.0（2026-09-28 复审修订）**：**再次移除随包源码包 `nexport-source.zip`**——
    2026-09-28 合规复审裁定恢复 v1.3.0 移除态（随包源码 zip 移除、源码提供渠道回到公开
    fork 仓库 https://github.com/bilieebiliee1-design/ClawProxyHub ）；关于页「导出源码包」
