@@ -9,7 +9,7 @@ description: NexPort（ClawProxyHub fork）Lua 插件开发指南。当用户想
 
 - 契约：`sdk/proto/cph.proto`（405 行，核心与插件唯一耦合点）
 - Lua 宿主：`hosts/luahost/*.go`（Go 实现的通用插件，把契约 RPC 翻译成 Lua 调用；NexPort fork 中位于 `gateway-mobile/core/luahost/`，与上游逐文件比对仅模块导入路径不同）
-- 官方示例：`examples/autoclaw/`（本目录收录，完整源码）、`examples/hello-world/`（最小可运行模板）
+- 官方示例：`examples/autoclaw/`（本目录收录，完整源码）、`examples/hello-world/`（最小可运行模板）、`examples/luatask/`（任务能力骨架 tasks()/task()）
 
 ## 何时使用
 
@@ -288,5 +288,6 @@ zip -X ../hello-world.cphplugin manifest.json main.lua   # 有 icon/lib 再一�
 
 - `examples/autoclaw/` — 官方 Lua 插件（manifest + 808 行 main.lua + icon）：多步手机验证码登录、自持 token 刷新、内置模型目录、OpenAI 兼容流式转发、重试与限流判定、钱包余额 profile——「真实上游接入」的完整参照。
 - `examples/hello-world/` — 最小可运行模板（manifest + main.lua）：api_key 登录 → 静态模型 → 回显对话，离线可跑，已被 `core/luahost/hello_world_test.go` 契约测试覆盖（加载、handshake 回退、login/models/chat/401 全链路）。
+- `examples/luatask/` — 任务能力骨架（manifest + main.lua）：`tasks()` 声明能力 + `task(req)` 执行，返回 `{summary, changed, blob, detail_json, notification, error}`；已被 `core/luahost/load_test.go` 的 `TestListTaskCapabilities` / `TestRunTaskBadCred` 契约测试覆盖（任务 RPC 与「脚本未声明 tasks 时回空 / 未实现 task 时回 501」语义）。
 
-从这两份源码出发改造，是写新插件最可靠的路径。
+从这几份源码出发改造，是写新插件最可靠的路径。

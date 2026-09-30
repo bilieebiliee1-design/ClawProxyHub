@@ -1,6 +1,22 @@
 package adminapi
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
+
+// TestRemoteVersionURLNotUpstream 版本清单默认须指向 fork（v1.4.5 口径修复）：
+// 上游 main 的 version.json 随上游核心版本走（v1.5.0 起 changelog 是上游桌面版事实：
+// 管理后台移动端适配/PWA），指回上游会让核心位 1.2.9 持续判「有更新」并弹上游文案。
+// 本测试拦住未来同步上游时的静默回退。
+func TestRemoteVersionURLNotUpstream(t *testing.T) {
+	if strings.Contains(remoteVersionURL, "ShadowSmallBaby/ClawProxyHub") {
+		t.Fatalf("远端版本清单不应指向上游仓库: %s", remoteVersionURL)
+	}
+	if !strings.HasSuffix(remoteVersionURL, "version.json") {
+		t.Fatalf("远端版本清单应为 version.json: %s", remoteVersionURL)
+	}
+}
 
 func TestCompareSemver(t *testing.T) {
 	cases := []struct {

@@ -54,6 +54,10 @@ package version
 var Core = "1.2.9"
 
 // Mobile 安卓端产品版本（NexPort versionName）；构建时同样可经 ldflags 覆盖。
+// 1.4.5（2026-09-30）：随 APK v1.4.5（versionCode 10）同步——上游同步移植轮：
+// luahost 任务 RPC（ListTaskCapabilities/RunTask，Lua 插件 tasks()/task()）、
+// adminapi 检查更新口径由上游清单改指 fork 清单（remoteVersionURL）、plugmgr
+// 安装/管理随上游修复；面板 dist 重嵌入、AAR 随 Mobile 位重编（版本链六处一致口径）。
 // 1.4.4（2026-09-29）：随 APK v1.4.4（versionCode 9）同步——官方源 index 全量 25 个
 // Go 插件内置（10→25：新增 chatjimmy/codearts/codebuff/doubao/gorkcli/improvado/
 // joycode/loomy/mimo/notion/postman/puter/qoder/raccoon/trae 15 个，版本随上游
@@ -75,7 +79,7 @@ var Core = "1.2.9"
 // 版本徽标与关于页、APK versionName 统一口径（验收回归：AAR 内 Mobile 滞留 1.1.0，
 // bridge Version() 串三处不一致）。
 // 1.1.0（2026-09-26）：随 APK v1.1.0（versionCode 2）全面改版同步。
-var Mobile = "1.4.4"
+var Mobile = "1.4.5"
 
 // String 完整版本串："mobile (core x)" 形态，供 bridge.Version() 与关于页展示。
 func String() string { return Mobile + " (core " + Core + ")" }

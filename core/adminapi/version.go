@@ -11,7 +11,16 @@ import (
 )
 
 // remoteVersionURL 远端版本清单（仓库根 version.json，经 GitHubProxy 加速）。
-const remoteVersionURL = "https://raw.githubusercontent.com/ShadowSmallBaby/ClawProxyHub/main/version.json"
+// NexPort 口径（v1.4.5 修复）：默认指向 **fork 仓库** 的清单，而非上游 —— 上游 main 的
+// version.json 随上游核心版本走（v1.5.0 起，其 changelog 是上游桌面版事实：管理后台
+// 全面移动端适配/PWA），对 NexPort 用户是误导：核心位 1.2.9 会持续被判「有更新」并弹
+// 上游文案。fork main 的 version.json 由本 fork 维护（发布流程见 publish-main/，其
+// push.log 记录 main 分支推送），文案与版本号均可控。
+// 构建时可用 -ldflags "-X io.nexport.gateway/core/adminapi.remoteVersionURL=<url>" 覆盖
+// （自建镜像 / 私有清单）。
+// 维护要点：fork main 的 version.json 当前记 v1.2.1，远端版本 ≤ 本机核心时不提示更新
+// （compareSemver 严格大于才提示）；核心位升版时须同轮更新该文件，文案按 NexPort 口径写。
+var remoteVersionURL = "https://raw.githubusercontent.com/bilieebiliee1-design/ClawProxyHub/main/version.json"
 
 // forkReleaseChannel NexPort 的发布通道（版本清单 / Releases），随 fork 发布仓库以 ldflags 注入：
 // -ldflags "-X io.nexport.gateway/core/adminapi.forkReleaseChannel=https://<fork 仓库/releases"。

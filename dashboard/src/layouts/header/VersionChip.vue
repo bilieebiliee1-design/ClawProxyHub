@@ -8,8 +8,17 @@
     </div>
   </t-tooltip>
 
-  <!-- 更新日志弹窗：点版本徽标有更新时展示，右下按钮跳发布页 -->
-  <t-dialog v-model:visible="changelogVisible" :header="changelogTitle" :footer="false" width="480px">
+  <!-- 更新日志弹窗：点版本徽标有更新时展示，右下按钮跳发布页。
+       attach="body"：本组件在 .t-layout__header 内，而该头部有 backdrop-filter（theme.css）
+       → 会为后代建立包含块，弹层的 position:fixed 以头部为参照导致错位/裁切。
+       挂 body 后弹层脱离头部（上游 aa49795 同因修复）。 -->
+  <t-dialog
+    v-model:visible="changelogVisible"
+    attach="body"
+    :header="changelogTitle"
+    :footer="false"
+    width="480px"
+  >
     <div class="changelog-ver">v{{ version }} → <b>v{{ latest }}</b></div>
     <ul v-if="changelog?.items?.length" class="changelog-list">
       <li v-for="(it, i) in changelog.items" :key="i">{{ clText(it) }}</li>

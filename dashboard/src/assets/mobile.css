@@ -25,6 +25,32 @@
     padding-top: env(safe-area-inset-top);
   }
 
+  /* 头部减负（B4）：通知/语言/主题已移入侧栏抽屉（AppHeader mobile 分支 + AppSidebar
+     抽屉脚），头部只留标题与用户入口 → 可以收窄。高度 64→56、左右留白 24→12，
+     把纵向空间还给内容（360px A/B 实测上游同类头部 53px）。scoped 特异性更高，用 !important。
+     注意两点（A2 安全区不被破坏）：
+       ① 只覆盖左右 padding，不写 padding 简写——否则会盖掉上一条 --insets-top 避让；
+       ② 高度按 56px + 刘海 inset 计，使内容区恒为 56px（否则刘海机上被 padding 挤扁）。 */
+  .header {
+    height: calc(56px + env(safe-area-inset-top)) !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+  /* 汉堡按钮：曾作为 flex 子项被压缩到图标宽（360px A/B 实测 13x40，热区远小于下限）。
+     钉住尺寸不参与收缩，并抬到 44px（本项目触控下限）。 */
+  .menu-btn {
+    flex: none !important;
+    width: 44px !important;
+    height: 44px !important;
+  }
+
+  /* 登录/初始化页：html/body 已锁滚动（theme.css），键盘弹起时这两页须能内部滚动，
+     否则卡片底部（提交按钮）被裁掉且无处可滚。 */
+  .login-wrap,
+  .setup-wrap {
+    overflow-y: auto;
+  }
+
   /* 页面容器：收窄留白 + 底部安全区；杜绝页面级横向溢出（表格滚动在各表内部完成） */
   .page {
     padding: 12px 12px calc(20px + env(safe-area-inset-bottom));

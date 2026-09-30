@@ -247,6 +247,34 @@ onMounted(async () => {
   color: var(--td-text-color-secondary);
   font-size: 13px;
 }
+/* 窄屏统计卡（A/B 实测：360px 下 50% 宽卡片放不下「46px 图标 + 14px 间距 + 文本」，
+   .stat-label 被压成 22x88 —— 每行 1 个汉字共 4 行，卡片高 180，上游同页为单行）。
+   改为图标与文本上下分栏：文本独占整行宽度，标签不再逐字换行。 */
+@media (max-width: 768px) {
+  .stat-inner {
+    flex-wrap: wrap;
+    gap: 8px 10px;
+  }
+  .stat-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    font-size: 17px;
+  }
+  .stat-meta {
+    /* flex-basis 100% → 文本始终另起一行，拿到整行宽度（卡片半宽下仍够 4 个汉字） */
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .stat-value {
+    font-size: 22px;
+  }
+  .stat-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
 .chart {
   height: 280px;
   width: 100%;

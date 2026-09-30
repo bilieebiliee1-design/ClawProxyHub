@@ -1,11 +1,40 @@
 <template>
   <div class="page">
     <page-header>
-      
-      <t-button theme="primary" :disabled="!plugins.length" @click="openAdd">{{ $t('accounts.add') }}</t-button>
+      <!-- 桌面/宽屏：按「插件 · 实例」筛选（账号出现过的组合去重；不改接口） -->
+      <filter-bar v-if="!isMobile && accounts.length">
+        <t-select
+          v-model="instanceFilter"
+          clearable
+          :placeholder="$t('accounts.filterInstance')"
+          :options="instanceFilterOptions"
+          class="w-md"
+        />
+      </filter-bar>
+      <t-button v-if="!isMobile" theme="primary" :disabled="!plugins.length" @click="openAdd">{{ $t('accounts.add') }}</t-button>
     </page-header>
 
-    <c-table row-key="id" :data="accounts" :columns="columns" :loading="loading">
+    <!-- 窄屏（B1）：筛选收进底部抽屉，新建/筛选走右下 FAB（拇指可达） -->
+    <t-drawer
+      v-if="isMobile"
+      v-model:visible="filterOpen"
+      placement="bottom"
+      size="60%"
+      :header="$t('accounts.filterInstance')"
+      :footer="false"
+    >
+      <div class="filters is-stacked">
+        <t-select
+          v-model="instanceFilter"
+          clearable
+          :placeholder="$t('accounts.filterInstance')"
+          :options="instanceFilterOptions"
+        />
+        <t-button theme="primary" block @click="filterOpen = false">{{ $t('common.close') }}</t-button>
+      </div>
+    </t-drawer>
+
+    <c-table row-key="id" :data="filteredAccounts" :columns="columns" :loading="loading">
       <template #display_name="{ row }">
         <span class="acct-name" @click="openDetail(row.id)">{{ row.display_name || `#${row.id}` }}</span>
       </template>
@@ -334,11 +363,36 @@
       :delete-url="`/admin/accounts/${removing?.id ?? 0}`"
       @deleted="loadAll"
     />
+
+    <!-- 窄屏：筛选 + 新建（固定右下，避开分页/安全区） -->
+    <mobile-fab v-if="isMobile">
+      <t-button
+        v-if="accounts.length"
+        theme="default"
+        variant="outline"
+        shape="circle"
+        size="large"
+        :aria-label="$t('accounts.filterInstance')"
+        @click="filterOpen = true"
+      >
+        <template #icon><filter-icon /></template>
+      </t-button>
+      <t-button
+        theme="primary"
+        shape="circle"
+        size="large"
+        :disabled="!plugins.length"
+        :aria-label="$t('accounts.add')"
+        @click="openAdd"
+      >
+        <template #icon><add-icon /></template>
+      </t-button>
+    </mobile-fab>
   </div>
 </template>
 
 <script setup lang="ts">
-import { CCard, CDialog, CTable, CTabs } from '../../components/base'
+import { CCard, CDialog, CTable, CTabs, FilterBar, MobileFab } from '../../components/base'
 import PageHeader from '../../components/PageHeader.vue'
 import EntityIcon from '../../components/EntityIcon.vue'
 import GroupPicker from './GroupPicker.vue'
@@ -349,6 +403,8 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { MessagePlugin } from 'tdesign-vue-next'
+import { AddIcon, FilterIcon } from 'tdesign-icons-vue-next'
+import { useMediaQuery } from '../../composables'
 import { accountApi, groupApi, instanceApi, pluginApi, proxyApi } from '../../api/entities'
 import BindSelect from '../../components/BindSelect.vue'
 import DeleteImpactDialog from '../../components/DeleteImpactDialog.vue'
@@ -359,6 +415,9 @@ import { isQrDataUrl } from '../../api/types'
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
+
+// 窄屏（≤768px）：筛选/新建下沉 FAB，筛选控件收进底部抽屉（B1）
+const { matches: isMobile } = useMediaQuery()
 
 const plugins = ref<PluginInfo[]>([])
 // 已停止的插件仍在列表里（账号列品牌名要查得到），但新建账号只能选运行中的
@@ -433,6 +492,30 @@ function instanceOptions(pluginID: number) {
 }
 const instanceName = (id: number) => instanceNameOf(instances.value, id)
 
+// 按「插件 · 实例」筛选（纯前端，不改接口）：选项取账号出现过的 (plugin_id, instance_id)
+// 组合去重，instance_id=0 记为「默认」；桌面走页头筛选条，窄屏收进底部抽屉。
+const instanceFilter = ref<string | undefined>(undefined)
+const filterOpen = ref(false)
+const instanceFilterOptions = computed(() => {
+  const seen = new Map<string, { plugin_id: number; instance_id: number }>()
+  for (const a of accounts.value) {
+    const iid = a.instance_id || 0
+    const key = `${a.plugin_id}:${iid}`
+    if (!seen.has(key)) seen.set(key, { plugin_id: a.plugin_id, instance_id: iid })
+  }
+  return [...seen.values()]
+    .sort((x, y) => x.plugin_id - y.plugin_id || x.instance_id - y.instance_id)
+    .map(({ plugin_id, instance_id }) => ({
+      value: `${plugin_id}:${instance_id}`,
+      label: `${pluginLabel(plugin_id)} · ${instance_id ? instanceName(instance_id) : t('accounts.defaultInstance')}`,
+    }))
+})
+const filteredAccounts = computed(() => {
+  if (!instanceFilter.value) return accounts.value
+  const [pid, iid] = instanceFilter.value.split(':').map(Number)
+  return accounts.value.filter((a) => a.plugin_id === pid && (a.instance_id || 0) === iid)
+})
+
 // 授权按钮文案：按登录方式形态给出（发送验证码 / 生成授权链接 / 授权）
 const submitLabel = computed(() => {
   if (nextStep.value?.wait) return showCallbackInput.value ? t('accounts.submitCallback') : t('accounts.waitingAuth')
@@ -446,7 +529,7 @@ const submitLabel = computed(() => {
 const columns = computed(() => [
   { colKey: 'display_name', title: t('accounts.account'), width: 160, ellipsis: true, mobileTitle: true },
   { colKey: 'plugin', title: t('accounts.colPlugin'), width: 110, ellipsis: true, cell: (_h: any, { row }: any) => pluginLabel(row.plugin_id), align: 'center' },
-  { colKey: 'instance', title: t('accounts.instance'), width: 132, ellipsis: true, mobileHide: true, cell: (_h: any, { row }: any) => instanceName(row.instance_id), align: 'center' },
+  { colKey: 'instance', title: t('accounts.instance'), width: 132, ellipsis: true, mobileFoldable: true, cell: (_h: any, { row }: any) => instanceName(row.instance_id), align: 'center' },
   { colKey: 'group', title: t('accounts.groups'), align: 'center' },
   { colKey: 'credits', title: t('accounts.credits'), width: 120, align: 'center' },
   { colKey: 'status', title: t('accounts.status'), width: 90, align: 'center' },
@@ -997,6 +1080,16 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* 底部抽屉内：筛选控件与关闭按钮各占一行（窄屏不横向挤压） */
+.filters.is-stacked {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+.filters.is-stacked > * {
+  width: 100%;
+}
 /* 账号名称：点击开详情，移入高亮 */
 .acct-name {
   cursor: pointer;

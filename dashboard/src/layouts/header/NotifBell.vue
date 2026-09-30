@@ -29,8 +29,14 @@
     </template>
   </t-popup>
 
-  <!-- 通知详情弹窗 -->
-  <t-dialog v-model:visible="detailVisible" :header="current?.title" :footer="false" width="480px">
+  <!-- 通知详情弹窗（attach="body"：头部 backdrop-filter 会建立包含块，弹层不挂 body 会错位） -->
+  <t-dialog
+    v-model:visible="detailVisible"
+    attach="body"
+    :header="current?.title"
+    :footer="false"
+    width="480px"
+  >
     <div class="notif-content">{{ current?.content }}</div>
     <div v-if="current" class="notif-meta">{{ fmtDateTime(current.created_at) }}</div>
   </t-dialog>

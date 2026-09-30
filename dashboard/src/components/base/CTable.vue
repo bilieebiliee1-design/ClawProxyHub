@@ -134,9 +134,36 @@ const onRowClick = computed(() => attrs.onRowClick as ((ctx: { row: Record<strin
   padding-top: 8px;
   border-top: 1px solid var(--td-component-stroke);
   display: flex;
-  justify-content: flex-end;
-  min-height: 40px; /* 触控热区 */
   align-items: center;
+  /* 操作区恒靠右；折叠开关用 margin-right:auto 靠左，无开关时行为与从前一致 */
+  justify-content: flex-end;
+  gap: 8px;
+  min-height: 40px; /* 触控热区 */
+}
+/* 折叠开关（mobileFoldable 列）：收起时「更多 N 项」、展开后「收起」。
+   视觉轻量（品牌色文字、无边框），40px 高兜住触控下限。 */
+.c-card__more {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 2px;
+  margin-right: auto; /* 靠左，操作链接保持靠右 */
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--td-brand-color);
+  font-family: inherit;
+  touch-action: manipulation;
+}
+.c-card__more:active {
+  opacity: 0.6;
+}
+.c-card__op {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
 }
 /* 操作区/值内的 t-space 允许换行，链接热区放大 */
 .c-card .t-link {

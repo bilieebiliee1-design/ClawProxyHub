@@ -1,5 +1,7 @@
 <!-- AppHeader — 头部：左页面标题/描述 + 右功能区（版本/通知/语言/主题/用户）。
-     移动端（mobile=true）：左侧汉堡按钮唤起抽屉侧栏；版本/GitHub 徽标隐藏（触屏无 hover 意义，窄屏让位）。 -->
+     移动端（mobile=true）：左侧汉堡按钮唤起抽屉侧栏；版本/GitHub 徽标隐藏（触屏无 hover 意义，窄屏让位）；
+     通知/语言/主题移入抽屉底部（B4：360px 实测三者占满右侧 242px，标题只剩 52px），
+     头部只留标题 + 用户入口。 -->
 <template>
   <t-header class="header">
     <div class="header-left">
@@ -22,9 +24,9 @@
     <div class="header-right">
       <version-chip v-if="!mobile" />
       <github-icon-btn v-if="!mobile" />
-      <notif-bell />
-      <lang-switch />
-      <theme-switch />
+      <notif-bell v-if="!mobile" />
+      <lang-switch v-if="!mobile" />
+      <theme-switch v-if="!mobile" />
       <user-menu :username="username" :role="role" />
     </div>
   </t-header>

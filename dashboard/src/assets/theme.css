@@ -80,6 +80,39 @@ body,
 #app {
   height: 100%;
   margin: 0;
+  /* 滚动锁（对齐上游 c88f24c）：滚动只发生在内容容器（AppLayout .content）内，
+     页面级不得再滚——否则移动端整页滚动会带走头部/分页，长列表滚到底还要先把
+     页面拉回来才能点分页。内容区自带 overflow-y:auto，此锁不影响列表滚动。 */
+  overflow: hidden;
+}
+
+/* 内容区栅格/布局链：t-layout 默认 min-height:auto，内层布局会被内容撑高
+   （360px 实测内层 .t-layout 2267 > 视口 612），使 .content 的 flex:1/height:0
+   内部滚动失效、退化为整页滚动。此处放开收缩，内部滚动才生效（头部/分页钉住）。 */
+.t-layout {
+  min-height: 0;
+}
+.t-layout__content {
+  min-height: 0;
+}
+
+/* ---------- 过滤栏控件定宽工具类（B7，对齐上游命名） ----------
+   内联 width 由各视图改为 w-* 类：桌面端保持定宽（不抖动），
+   FilterBar 在 ≤1024px 内把它们转成弹性等分（见 FilterBar.vue）。 */
+.w-xs {
+  width: 120px !important;
+}
+.w-sm {
+  width: 160px !important;
+}
+.w-md {
+  width: 240px !important;
+}
+.w-lg {
+  width: 300px !important;
+}
+.w-xl {
+  width: 360px !important;
 }
 
 /* 全局隐藏滚动条（滚动照常，仅不显示滚动条） */

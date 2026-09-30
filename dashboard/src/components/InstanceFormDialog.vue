@@ -135,6 +135,18 @@ async function submit() {
       MessagePlugin.warning(t('instances.baseUrlRequired'))
       return
     }
+    // host 语义化校验（上游 8ec26dd）：域名（含 .）/ IPv4 / localhost 三选一，
+    // 修复「非空即通过」导致单字符（如 `1`）生成坏 base_url 的绕过。
+    const h = form.host
+    const hasPort = /:[0-9]{1,5}$/.test(h)
+    const hostPart = hasPort ? h.slice(0, h.lastIndexOf(':')) : h
+    const isDomain = /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)+$/.test(hostPart)
+    const isIPv4 = /^(\d{1,3}\.){3}\d{1,3}$/.test(hostPart)
+    const isLocalhost = hostPart === 'localhost'
+    if (!isDomain && !isIPv4 && !isLocalhost) {
+      MessagePlugin.warning(t('instances.baseUrlInvalid'))
+      return
+    }
   }
   saving.value = true
   try {

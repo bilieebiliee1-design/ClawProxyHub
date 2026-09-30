@@ -65,6 +65,13 @@
           <template #icon><component :is="item.icon" /></template>{{ $t(item.label) }}
         </t-menu-item>
       </t-menu>
+      <!-- 抽屉脚：从头部移下来的功能入口（B4）。头部在 360px 下放不下这些图标，
+           移到这里既保住功能可达性，又把标题宽度还给头部。 -->
+      <div class="drawer-foot">
+        <notif-bell />
+        <lang-switch />
+        <theme-switch />
+      </div>
     </div>
   </t-drawer>
 </template>
@@ -74,6 +81,7 @@ import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ChevronLeftIcon, ChevronRightIcon } from 'tdesign-icons-vue-next'
 import { branding, brandLogo, brandCustom } from '../utils/branding'
+import { NotifBell, LangSwitch, ThemeSwitch } from './header'
 import type { MenuItem } from './types'
 
 defineProps<{
@@ -179,5 +187,15 @@ watch(() => route.fullPath, () => { if (open.value) open.value = false })
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
+}
+/* 抽屉脚：功能图标行（通知/语言/主题），底部安全区避让 */
+.drawer-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 4px;
+  padding: 4px 8px calc(4px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--td-component-border);
+  flex-shrink: 0;
 }
 </style>

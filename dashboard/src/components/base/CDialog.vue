@@ -1,6 +1,10 @@
-<!-- CDialog — 统一二次封装弹窗：圆角/头部字重集中管理。 -->
+<!-- CDialog — 统一二次封装弹窗：圆角/头部字重集中管理。
+     attach="body"：TDesign 默认把弹层渲染在组件所在位置——头部区 .t-layout__header 有
+     backdrop-filter（theme.css），会为后代建立包含块，弹窗的 position:fixed 以头部为参照
+     → 定位错位/被裁切（上游 aa49795 同因修复）。统一挂到 body 一处覆盖全部 CDialog 弹窗；
+     主题变量挂在 documentElement 上，挂 body 不丢明暗主题。 -->
 <template>
-  <t-dialog v-bind="$attrs" class="c-dialog">
+  <t-dialog v-bind="$attrs" attach="body" class="c-dialog">
     <template v-for="(_, name) in $slots" #[name]="slotProps">
       <slot :name="name" v-bind="slotProps ?? {}" />
     </template>
