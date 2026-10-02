@@ -25,7 +25,12 @@ import java.net.URL
 object AdminApi {
     @Volatile private var token: String? = null
 
-    fun reset() { token = null }
+    fun reset() {
+        token = null
+        // 核心会话边界一并失效凭据解密缓存（perf 修复轮口径：解密缓存随核心会话清空，
+        // 下一会话首次需要时重读 SP + Keystore）
+        Prefs.invalidateAdminPassCache()
+    }
     fun hasToken(): Boolean = token != null
 
     /** 当前缓存的 JWT（面板 token 自动注入 panelLoginSpec A 用；null = 未登录）。 */

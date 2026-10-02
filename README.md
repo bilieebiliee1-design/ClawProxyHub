@@ -6,7 +6,20 @@
 
 NexPort 安卓版把 ClawProxyHub 的 Go 核心（网关、路由、账号、分组、密钥、任务调度、市场）
 原样搬进一部手机：应用内完成引导、启动、装插件、开临时隧道、后台保活，面板就长在
-WebView 里。当前版本 **v1.4.6（versionCode 11）**。
+WebView 里。当前版本 **v1.4.7（versionCode 12）**。
+
+## 系统要求与设备兼容性
+
+- **仅支持 64 位设备（`arm64-v8a`）**，Android 8.0（API 26）及以上；不提供
+  armeabi-v7a（32 位）产物——32 位设备安装直接报
+  `INSTALL_FAILED_NO_MATCHING_ABIS`（或商店/文件管理器提示「不兼容」），属预期
+  排除而非故障。2017–2019 年低端机型存在相当比例 32 位用户空间，安装前可用
+  `adb shell getprop ro.product.cpu.abilist` 确认（输出含 `arm64-v8a` 即为 64 位）。
+  不做 32 位产物的取舍：28 个 native 库全量重编、构建矩阵翻倍、APK 再增约
+  150MB，收益仅为已趋淘汰的机型群，以本文档化排除替代。
+- APK 按 ABI 拆分发行（v1.4.7 起）：手机用户取 **arm64-v8a 专用包**（较全量包
+  减约 162MB），不确定设备架构时用 universal 兜底包；x86_64 专用包仅供模拟器/
+  开发调试。
 
 ---
 
@@ -81,7 +94,7 @@ ClawProxyHub 的架构本来就是插件化的：核心只管网关、路由、�
 
 ### 获取安装包
 
-- **安卓 APK**：本仓库 [Releases](https://github.com/bilieebiliee1-design/ClawProxyHub/releases) 页提供（当前 v1.4.6，附 APK/AAB 与 SHA256 校验和）；也可以按下方步骤自行构建。
+- **安卓 APK**：本仓库 [Releases](https://github.com/bilieebiliee1-design/ClawProxyHub/releases) 页提供（当前 v1.4.7，按 ABI 拆分附 arm64-v8a 专用 / x86_64 专用 / universal 三个 APK + AAB 与 SHA256 校验和；手机用户取 arm64 专用包）；也可以按下方步骤自行构建。
 - **桌面版**：上游 [ShadowSmallBaby/ClawProxyHub](https://github.com/ShadowSmallBaby/ClawProxyHub)。
 - **源码**：安卓端完整源码即本分支 `mobile-port`；桌面端在 `main` 分支（上游内容）。
 
@@ -103,7 +116,8 @@ tools/build-cloudflared.sh   # ④ cloudflared-android-{arm64,x64}
 tools/build-android.sh       # ⑤ prepare-android.sh 落位 + gradle 打包
 ```
 
-产物落在 `app/build/outputs/apk/release/app-release.apk` 与
+产物落在 `app/build/outputs/apk/release/`（`splits.abi` 拆分：`app-arm64-v8a-release.apk`、
+`app-x86_64-release.apk`、`app-universal-release.apk`）与
 `app/build/outputs/bundle/release/app-release.aab`。签名：`keystore/`（本地文件，不入库）
 ——没有它时 release 不签名、仅 debug 可构建，自备一个即可。
 
@@ -156,7 +170,7 @@ go run ./cmd/nexcore   # env CPH_DATA_DIR=./data；curl 127.0.0.1:<port>/health
    预打包）；市场安装仅放行 runtime=lua 包，Go 包明确拒绝（内置 Go 插件除外，
    二进制随 APK 经 nativeLibraryDir 提供）。
 7. **服务端密码策略加强**：/admin/setup 要求 ≥10 位含大小写与数字（原生引导同规）。
-8. **版本位**：`version.Core`（1.2.9，随上游 SDK v1.2.2 / fb6475c 移植同步）+ `version.Mobile`（1.4.3）。
+8. **版本位**：`version.Core`（1.2.9，随上游 SDK v1.2.2 / fb6475c 移植同步）+ `version.Mobile`（1.4.7，随 APK versionName/versionCode 同步）。
 
 <details>
 <summary><strong>附：v1.3.0 核心侧改造记录（本地修订，展开阅读）</strong></summary>

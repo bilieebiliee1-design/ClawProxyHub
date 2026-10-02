@@ -211,6 +211,9 @@ object CoreController {
                 gatewayPort = Bridge.gatewayPort().toInt()
                 tunnelPort = Bridge.tunnelPort().toInt()
                 lanEndpoint = Bridge.lanEndpoint()
+                // 版本串预热（perf 修复轮）：Bridge.version() 的首次 gobind 同步调用在
+                // 本工作线程完成，RUNNING 分发后关于页主线程首调（coreVerNow）只读缓存
+                BridgeVersion.prewarm()
                 // 端口变更通知（自动端口被占用换口时非空）：追加进日志入流供 UI 提示 +
                 // 结构化旧→新端口（核心描述文本解析，兜底壳侧 prevPort 比对）
                 val notice = Bridge.portChangeNotice()

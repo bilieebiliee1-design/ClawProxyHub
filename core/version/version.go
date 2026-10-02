@@ -84,7 +84,15 @@ var Core = "1.2.9"
 // 五项遗留缺陷修复（概览统计卡竖排、设置 6 tab 溢出、密钥创建弹窗折叠线下、
 // mobile.css 头注释触控口径、format.ts toDate 纳秒防御）；面板 dist 重嵌入、
 // AAR 随 Mobile 位重编（版本链六处一致口径）。
-var Mobile = "1.4.6"
+// 1.4.7（2026-10-03）：随 APK v1.4.7（versionCode 12）同步——性能/兼容修复轮：
+// ①插件自启账号门槛（AutoStarts 仅拉起已配置账号的插件；无账号插件常驻纯耗内存，
+// 实测 25 插件全量常驻 PSS 614.6MB）；②自启 spawn 分批限流（每批 4 并发；顺序
+// 全量 spawn 风暴曾拖核心启动 +5.2s）；AAR 随 Mobile 位与核心改动重编（版本链
+// 六处一致口径）。壳侧同轮：③面板 token 供给的凭据判空/Keystore 解密移出主线程
+// （升级后首启 ANR 最强候选；解密结果进程内缓存随核心会话失效）；④核心 RUNNING
+// 前工作线程预热 BridgeVersion（关于/首页主线程首调只读缓存）；⑤ABI 拆分
+// （arm64 专用/x86_64 专用/universal 三 APK，发行附 arm64 专用包）。
+var Mobile = "1.4.7"
 
 // String 完整版本串："mobile (core x)" 形态，供 bridge.Version() 与关于页展示。
 func String() string { return Mobile + " (core " + Core + ")" }

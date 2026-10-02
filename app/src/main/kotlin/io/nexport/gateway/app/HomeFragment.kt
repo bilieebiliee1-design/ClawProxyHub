@@ -1265,4 +1265,19 @@ object BridgeVersion {
         }
         return cached ?: "1.3.0"
     }
+
+    /**
+     * 工作线程预热（perf 修复轮）：CoreController.start 在 Bridge.start 返回后调用，
+     * 把首次 gobind 同步调用挪出主线程——原实现首次 current() 落在 RUNNING 分发后的
+     * 主线程回调（关于页 onCreateView/coreListener），恰逢插件 spawn 竞争峰值。
+     * 预热失败不缓存兜底值（留给首调 current() 再试一次），成功结果与 current() 共用
+     * 同一份进程内缓存（版本串随二进制固定，核心重启无需失效）。
+     */
+    fun prewarm() {
+        if (cached != null) return
+        try {
+            cached = io.nexport.gateway.bridge.Bridge.version()
+        } catch (_: Throwable) {
+        }
+    }
 }

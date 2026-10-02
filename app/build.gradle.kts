@@ -30,8 +30,8 @@ android {
         applicationId = "io.nexport.gateway"
         minSdk = 26
         targetSdk = 35
-        versionCode = 11
-        versionName = "1.4.6"
+        versionCode = 12
+        versionName = "1.4.7"
         // AGPL 合规常量：上游项目与 fork 源码链接（关于页固定展示，不可隐藏）
         buildConfigField("String", "UPSTREAM_NAME", "\"ClawProxyHub\"")
         buildConfigField("String", "UPSTREAM_URL", "\"https://github.com/ShadowSmallBaby/ClawProxyHub\"")
@@ -59,6 +59,22 @@ android {
             if (keystoreProps.isNotEmpty()) {
                 signingConfig = signingConfigs.getByName("release")
             }
+        }
+    }
+
+    // ABI 拆分（perf 修复轮）：assembleRelease 产出 arm64-v8a 专用 / x86_64 专用 /
+    // universal 三个 APK——x86_64 仅供模拟器/开发调试，双 ABI 全量包让真实用户为
+    // 用不到的一半 native 体积买单（25×插件 so + libgojni/libluahost/cloudflared，
+    // arm64 主用户群预计减包约 80MB）。发行口径：Release 附 arm64 专用包（面向手机
+    // 用户）+ universal 兜底。useLegacyPackaging=true 保持不动（exec 三通道唯一
+    // 合规可执行位置 + minSdk 26 的 legacy packaging 前提不变），AAB 不受影响
+    // （按安装时 ABI 分发，天然即拆）。
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a", "x86_64")
+            isUniversalApk = true
         }
     }
 

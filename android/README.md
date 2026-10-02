@@ -52,9 +52,15 @@
 bash tools/build-android.sh   # prepare + :app:assembleRelease :app:bundleRelease
 ```
 
-- 硬性产物：`app/build/outputs/apk/release/app-release.apk`、
+- 硬性产物：`app/build/outputs/apk/release/` 下 `app-arm64-v8a-release.apk`、
+  `app-x86_64-release.apk`、`app-universal-release.apk`（ABI 拆分，
+  `splits.abi { include("arm64-v8a", "x86_64"); isUniversalApk = true }`）与
   `app/build/outputs/bundle/release/app-release.aab`（AGP 9.4.0 / Gradle 9.6.1 /
   JDK 21 / compileSdk 36 / minSdk 26 / targetSdk 35，ABI arm64-v8a + x86_64）。
+  发行口径：Release 附 arm64 专用包（面向手机用户）+ universal 兜底；
+  x86_64 专用包仅供模拟器/开发调试。**仅支持 64 位设备**——不提供 armeabi-v7a
+  （32 位）产物，32 位设备安装报 `INSTALL_FAILED_NO_MATCHING_ABIS` 属预期排除
+  （见 dist/RELEASE_NOTES 系统要求）。
 - `packaging { jniLibs { useLegacyPackaging = true } }`（manifest extractNativeLibs=true
   已实测）——nativeLibraryDir 才有实体 .so，插件子进程 / luahost / cloudflared 三条
   exec 路径依赖它。

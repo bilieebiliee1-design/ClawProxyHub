@@ -46,25 +46,54 @@ object Prefs {
     fun saveAdmin(ctx: Context, user: String, pass: String) {
         val blob = KeyEnvelope.encryptPrefs((user + "\n" + pass).toByteArray(Charsets.UTF_8))
         sp(ctx).edit().putString("admin_user", user).putString("admin_blob", blob).apply()
+        markAdminPassCached(pass) // 进程内缓存同步更新（下次 adminPass 免解密）
     }
 
     fun adminUser(ctx: Context): String? = sp(ctx).getString("admin_user", null)
 
+    // ---- adminPass 进程内解密缓存（perf 修复轮） ----
+    // KeyEnvelope.decryptPrefs 走 AndroidKeyStore AES-GCM，单次代价高且曾在主线程被
+    // 连调两次（升级后首启 ANR 最强候选，见 PanelFragment.ensurePanelToken 修复注释）。
+    // 解密成功一次后进程内复用；写入（saveAdmin）/清除（clearAdmin）与核心会话切换
+    // （AdminApi.reset → invalidateAdminPassCache）时失效重读。@Volatile 双字段 +
+    // 重复解密的良性竞态可接受（结果幂等）。解密失败不缓存，保留每次调用重试语义。
+
+    @Volatile private var adminPassCache: String? = null
+    @Volatile private var adminPassCached = false
+
+    private fun markAdminPassCached(pass: String?) {
+        adminPassCache = pass
+        adminPassCached = true
+    }
+
+    /** 凭据解密缓存失效（下次 adminPass 重新读 SP + Keystore 解密）。 */
+    fun invalidateAdminPassCache() {
+        adminPassCache = null
+        adminPassCached = false
+    }
+
     fun adminPass(ctx: Context): String? {
-        val blob = sp(ctx).getString("admin_blob", null) ?: return null
-        return try {
-            val raw = KeyEnvelope.decryptPrefs(blob) ?: return null
-            val s = String(raw, Charsets.UTF_8)
-            val i = s.indexOf('\n')
-            if (i < 0) null else s.substring(i + 1)
+        if (adminPassCached) return adminPassCache
+        val blob = sp(ctx).getString("admin_blob", null) ?: run {
+            markAdminPassCached(null) // 未存凭据：缓存空结果，后续调用零 SP/Keystore 代价
+            return null
+        }
+        val pass = try {
+            val raw = KeyEnvelope.decryptPrefs(blob)
+            val s = raw?.let { String(it, Charsets.UTF_8) }
+            val i = s?.indexOf('\n') ?: -1
+            if (s == null || i < 0) null else s.substring(i + 1)
         } catch (_: Exception) {
             null
         }
+        if (pass != null) markAdminPassCached(pass)
+        return pass
     }
 
     /** 清除本机凭据记忆（settingsSpec security_forget_credentials）。 */
     fun clearAdmin(ctx: Context) {
         sp(ctx).edit().remove("admin_user").remove("admin_blob").apply()
+        invalidateAdminPassCache()
     }
 
     // ---- v1.1.0 设置项 ----

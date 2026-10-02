@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -236,7 +237,7 @@ func (a *App) lanEndpoint() string {
 }
 
 // start 实际启动序列（globalMu 已持）。
-func start(ctx context.Context, opts Options) (*App, int, int, error) {
+func start(ctx context.Context, opts Options) (app *App, gwPort, tunPort int, err error) {
 	prevTMPDIR := "" // Start 前的 TMPDIR（Stop 恢复；测试卫生，见下）
 	if opts.DataDir == "" {
 		return nil, 0, 0, errors.New("DataDir 必填")
@@ -249,6 +250,17 @@ func start(ctx context.Context, opts Options) (*App, int, int, error) {
 		_ = os.Setenv("TMPDIR", opts.CacheDir)
 		_ = os.MkdirAll(opts.CacheDir, 0o700)
 	}
+	// 失败路径同样恢复（perf 修复轮复跑测试发现）：App 实例未建成即出错返回
+	//（固定端口被占用 / TZOffset 非法 / SecretKeyHex 解封失败等）时，进程级 TMPDIR
+	// 停留在本次 CacheDir——后续成功 Start 会覆盖且生产自愈，但包级测试里该目录
+	// 已随上一测清理，后续用例 t.TempDir() 全数 Fatal（port_test TestGatewayPort-
+	// FixedMode 占用端口用例 → TestLanListener 等 TempDir stat 报错）。与 Stop 恢复
+	// 同口径：实例未建成 → 立即复原；建成 → 交由 Stop 恢复。
+	defer func() {
+		if app == nil && opts.CacheDir != "" {
+			_ = os.Setenv("TMPDIR", prevTMPDIR)
+		}
+	}()
 
 	// 日志出口与级别（未注册 sink 时落 stderr，桌面行为不变）
 	logsink.SetMinLevel(logsink.ParseLevel(opts.LogLevel))
@@ -305,8 +317,8 @@ func start(ctx context.Context, opts Options) (*App, int, int, error) {
 		gwLn.Close()
 		return nil, 0, 0, fmt.Errorf("listen tunnel: %w", err)
 	}
-	gwPort := gwLn.Addr().(*net.TCPAddr).Port
-	tunPort := tunLn.Addr().(*net.TCPAddr).Port
+	gwPort = gwLn.Addr().(*net.TCPAddr).Port
+	tunPort = tunLn.Addr().(*net.TCPAddr).Port
 	// 端口持久化（三种模式统一落最近一次生效端口；切回自动模式时从它继续）
 	persistPort(opts.DataDir, gwPort)
 	portChange := ""
@@ -367,13 +379,32 @@ func start(ctx context.Context, opts Options) (*App, int, int, error) {
 	// 安卓内置 Go 插件落盘（nativeLibraryDir 有 libplugin_<name>.so 而目录缺失时补
 	// manifest/icon；桌面为空操作）——使 Scan / 自启 / 市场安装状态走既有链路
 	plugins.EnsureBuiltinPlugins()
-	// 开机自启：持久化停止的插件（enabled=0）跳过，其余全拉起
+	// 开机自启：plugmgr.AutoStarts 双重过滤（①持久化停止 enabled=0 跳过；②仅拉起
+	// 已配置账号的插件——无账号插件不承载任何请求，常驻纯耗内存，经管理页「启动」
+	// 显式拉起）。
+	// 分批限流 spawn（perf 修复轮）：每批 4 个并发、批间让出 CPU——顺序全量拉起 25 个
+	// go-plugin 子进程实测构成 spawn 风暴（资源竞争轮核心启动 +5.2s、CPU 饱和），是
+	// 升级首启 ANR 的环境放大器。Start 并发安全（实例/客户端各自独立，仅落表短暂持锁）。
 	if bins, err := plugins.AutoStarts(); err == nil {
-		for _, bin := range bins {
-			if _, err := plugins.Start(ctx, bin); err != nil {
-				logsink.Printf("[plugin] start failed: %v", err)
-				rl.Warn("plugin", "start", "插件启动失败: "+filepath.Base(bin), err.Error(), nil)
+		const batchSize = 4
+		for i := 0; i < len(bins); i += batchSize {
+			end := i + batchSize
+			if end > len(bins) {
+				end = len(bins)
 			}
+			var wg sync.WaitGroup
+			for _, bin := range bins[i:end] {
+				wg.Add(1)
+				go func(bin string) {
+					defer wg.Done()
+					if _, err := plugins.Start(ctx, bin); err != nil {
+						logsink.Printf("[plugin] start failed: %v", err)
+						rl.Warn("plugin", "start", "插件启动失败: "+filepath.Base(bin), err.Error(), nil)
+					}
+				}(bin)
+			}
+			wg.Wait()
+			runtime.Gosched() // 批间让出一拍，缓解 spawn 竞争峰值
 		}
 	}
 	plugins.RefreshCatalog(ctx)

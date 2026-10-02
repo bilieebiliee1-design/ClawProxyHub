@@ -380,8 +380,15 @@ func (m *Manager) Names() []string {
 	return names
 }
 
-// AutoStarts 开机自动启动的插件目录列表：Scan 结果排除持久化停止的插件（enabled=0）。
-// DB 不可用 / 插件无记录（新装的）照常拉起。
+// AutoStarts 开机自动启动的插件目录列表，双重过滤：
+// ①持久化停止的插件（enabled=0）跳过（用户手动停用语义，沿用）；
+// ②仅保留「已配置账号」的插件（accounts.plugin_id → plugins.id → name 关联）。
+// 移动端插件子进程独立进程常驻（实测单插件 PSS 16-22MB、25 个全量常驻 614.6MB，
+// 约占设备内存 25%），无账号插件不承载任何请求/任务，常驻纯耗内存且是 LMKD
+// 回收首选；无账号插件经管理页「启动」显式拉起（startPlugin → Start 直调，不经
+// 本过滤），配置账号后的下次核心启动自动纳入自启。
+// DB 不可用降级为仅①照常拉起（与既有 fail-open 语义一致）。新装零账号首启 0 插件
+// 进程为预期（安装流程本身显式 Start，会话内立即可用）。
 func (m *Manager) AutoStarts() ([]string, error) {
 	dirs, err := m.Scan()
 	if err != nil {
@@ -390,17 +397,32 @@ func (m *Manager) AutoStarts() ([]string, error) {
 	if m.db == nil {
 		return dirs, nil
 	}
-	var names []string // Pluck 只能填充 slice，不能是 map
-	if err := m.db.Model(&model.Plugin{}).Where("enabled = ?", false).Pluck("name", &names).Error; err != nil || len(names) == 0 {
+	var stopped []string // Pluck 只能填充 slice，不能是 map
+	if err := m.db.Model(&model.Plugin{}).Where("enabled = ?", false).Pluck("name", &stopped).Error; err != nil {
 		return dirs, nil
 	}
-	disabled := make(map[string]bool, len(names))
-	for _, n := range names {
+	var ids []int64
+	if err := m.db.Model(&model.Account{}).Distinct().Pluck("plugin_id", &ids).Error; err != nil {
+		return dirs, nil
+	}
+	var withAcct []string
+	if len(ids) > 0 {
+		if err := m.db.Model(&model.Plugin{}).Where("id IN ?", ids).Pluck("name", &withAcct).Error; err != nil {
+			return dirs, nil
+		}
+	}
+	disabled := make(map[string]bool, len(stopped))
+	for _, n := range stopped {
 		disabled[n] = true
+	}
+	acct := make(map[string]bool, len(withAcct))
+	for _, n := range withAcct {
+		acct[n] = true
 	}
 	out := dirs[:0:0]
 	for _, d := range dirs {
-		if !disabled[filepath.Base(d)] {
+		// 目录名→插件名的键控与既有 enabled 过滤一致（filepath.Base）
+		if !disabled[filepath.Base(d)] && acct[filepath.Base(d)] {
 			out = append(out, d)
 		}
 	}

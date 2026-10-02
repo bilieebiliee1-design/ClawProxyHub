@@ -442,18 +442,22 @@ class PanelFragment : Fragment() {
      * 面板 token 自动注入门控（panelLoginSpec A；attachWebView 一次性供给，非逐次 loadPanel）：
      * ①幂等门 tokenProvisionedForPort == 网关端口 → 直接 onReady；
      * ②主线程回调式异步探测 localStorage 'cph-admin-token'（严禁复用 currentPanelToken 的
-     *   runOnUiThread+CountDownLatch 阻塞式——主线程复用会自锁）；已有 token → 标记已供给，
-     *   注册纯主题脚本直接加载（零 POST）；
-     * ③缺失且 Prefs 凭据在，且面板无「已退出」标记（panelLoginSpec E）→ 工作线程
-     *   AdminApi.login 铸新 token（AdminApi.reset 随核心停/启清空，每核心会话至多一次
-     *   POST）→ 注册合并脚本（主题+种子注入）→ onReady；
+     *   runOnUiThread+CountDownLatch 阻塞式——主线程复用会自锁）；已有 token 或面板有
+     *   「已退出」标记（panelLoginSpec E）→ 标记已供给，注册纯主题脚本直接加载（零 POST）；
+     * ③缺失 → 凭据判空 + Keystore 解密 + AdminApi.login 全部在工作线程（perf 修复轮：
+     *   原实现在本回调主线程里连读 Prefs.adminUser/adminPass——adminPass 每调用走
+     *   KeyEnvelope.decryptPrefs 的 Keystore AES-GCM 解密且被连调两次，恰逢核心刚
+     *   RUNNING 的主线程任务峰值，是升级后首启 ANR 的最强静态候选）。解密为空 →
+     *   回主线程走纯主题零 POST 分支；凭据在 → AdminApi.login 铸新 token
+     *   （AdminApi.reset 随核心停/启清空，每核心会话至多一次 POST）→ 注册合并脚本
+     *   （主题+种子注入）→ onReady；
      * ④铸失败 → 纯主题脚本照常加载（面板自身显示登录表单=合法兜底）+ Snackbar 明示。
      */
     private fun ensurePanelToken(onReady: () -> Unit) {
         val wv = webView
         if (wv == null || CoreController.gatewayPort <= 0) { onReady(); return }
         if (tokenProvisionedForPort == CoreController.gatewayPort) { onReady(); return }
-        // ②异步探测（主线程回调）：一并读「已退出」标记，一并决定是否需要种子注入
+        // ②异步探测：主线程回调只依据 token/loggedOut 两个 JS 结果分支，不做任何 SP/Keystore 读取
         wv.evaluateJavascript(
             "(function(){try{return JSON.stringify({t:localStorage.getItem('cph-admin-token')," +
                 "lo:sessionStorage.getItem('nx-logged-out')});}catch(e){return '{\"t\":null,\"lo\":null}';}})()"
@@ -466,20 +470,31 @@ class PanelFragment : Fragment() {
                 token = o.optString("t").takeIf { it.isNotEmpty() && it != "null" }
                 loggedOut = o.optString("lo") == "1"
             } catch (_: Exception) {}
-            if (token != null || loggedOut || Prefs.adminUser(requireContext()) == null ||
-                Prefs.adminPass(requireContext()) == null
-            ) {
-                // 已有 token / 用户已主动退出 / 无本机凭据：纯主题脚本直接加载（零 POST）
+            if (token != null || loggedOut) {
+                // 已有 token / 用户已主动退出：纯主题脚本直接加载（零 POST）
                 seedToken = null
                 tokenProvisionedForPort = CoreController.gatewayPort
                 syncThemeAndFont()
                 onReady()
                 return@evaluateJavascript
             }
-            // ③铸新 token（工作线程；同步阻塞的 bridge/HTTP 不占主线程）
-            val user = Prefs.adminUser(requireContext())!!
-            val pass = Prefs.adminPass(requireContext())!!
+            // ③凭据判空 + 解密 + 铸新 token（全部工作线程；同步阻塞的 SP/Keystore/HTTP 不占主线程）
+            val appCtx = requireContext().applicationContext
             Thread {
+                val user = Prefs.adminUser(appCtx)
+                val pass = if (user != null) Prefs.adminPass(appCtx) else null
+                if (user == null || pass == null) {
+                    // 无本机凭据（或解封失败）：回主线程走纯主题零 POST 分支
+                    if (!isAdded) return@Thread
+                    requireActivity().runOnUiThread {
+                        if (!isAdded) return@runOnUiThread
+                        seedToken = null
+                        tokenProvisionedForPort = CoreController.gatewayPort
+                        syncThemeAndFont()
+                        onReady()
+                    }
+                    return@Thread
+                }
                 val r = AdminApi.login(user, pass)
                 if (!isAdded) return@Thread
                 requireActivity().runOnUiThread {
