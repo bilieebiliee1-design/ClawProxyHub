@@ -4,7 +4,7 @@
 
     <!-- 统计卡片 -->
     <t-row :gutter="[16, 16]">
-      <t-col v-for="c in cards" :key="c.label" :span="2">
+      <t-col v-for="c in cards" :key="c.label" :span="isPhone ? 6 : 2">
         <c-card :bordered="false" class="stat-card">
           <div class="stat-inner">
             <div class="stat-icon" :style="{ background: c.bg, color: c.fg }">
@@ -116,7 +116,7 @@ import {
   DashboardIcon, CheckCircleIcon, ChartBarIcon, UserIcon, AppIcon, LockOnIcon,
 } from 'tdesign-icons-vue-next'
 import { statsApi, type QuotaPlugin, type TrendPoint } from '../../api/stats'
-import { useChart } from '../../composables'
+import { useChart, useMediaQuery } from '../../composables'
 import LogCells from '../../components/LogCells.vue'
 import { dict, protocolDict } from '../../utils/dict'
 import { fmtDateTime } from '../../utils/format'
@@ -124,6 +124,10 @@ import { modelLabel } from '../../utils/logfmt'
 import type { RequestLog, Stats } from '../../api/types'
 
 const { t } = useI18n()
+
+// 窄屏（≤768px，与 useMediaQuery/mobile.css 单断点一致）：统计卡每行 2 卡
+// （上游 StatCards 为 isPhone ? 6 : 2，767/1024 双断点换算到我方 768 单断点）
+const { matches: isPhone } = useMediaQuery()
 
 echarts.use([LineChart, GridComponent, TooltipComponent, LegendComponent, CanvasRenderer])
 
@@ -247,32 +251,25 @@ onMounted(async () => {
   color: var(--td-text-color-secondary);
   font-size: 13px;
 }
-/* 窄屏统计卡（A/B 实测：360px 下 50% 宽卡片放不下「46px 图标 + 14px 间距 + 文本」，
-   .stat-label 被压成 22x88 —— 每行 1 个汉字共 4 行，卡片高 180，上游同页为单行）。
-   改为图标与文本上下分栏：文本独占整行宽度，标签不再逐字换行。 */
+/* 窄屏统计卡（上游 StatCards 模型）：根因修复靠模板 span 改 isPhone?6:2（每行 2 卡，
+   卡宽≈160px），卡内按上游紧凑横排整体缩小——图标 34/r9/fs16、值 19、标签 11px 横排，
+   「今日请求」等 4 字标签单行可容，不再出现 22px 宽竖排 4 行 */
 @media (max-width: 768px) {
   .stat-inner {
-    flex-wrap: wrap;
-    gap: 8px 10px;
+    gap: 10px;
   }
   .stat-icon {
     width: 34px;
     height: 34px;
-    border-radius: 10px;
-    font-size: 17px;
-  }
-  .stat-meta {
-    /* flex-basis 100% → 文本始终另起一行，拿到整行宽度（卡片半宽下仍够 4 个汉字） */
-    flex: 1 1 100%;
-    min-width: 0;
+    border-radius: 9px;
+    font-size: 16px;
   }
   .stat-value {
-    font-size: 22px;
+    font-size: 19px;
   }
   .stat-label {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    margin-top: 1px;
+    font-size: 11px;
   }
 }
 .chart {

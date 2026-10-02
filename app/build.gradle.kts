@@ -30,8 +30,8 @@ android {
         applicationId = "io.nexport.gateway"
         minSdk = 26
         targetSdk = 35
-        versionCode = 10
-        versionName = "1.4.5"
+        versionCode = 11
+        versionName = "1.4.6"
         // AGPL 合规常量：上游项目与 fork 源码链接（关于页固定展示，不可隐藏）
         buildConfigField("String", "UPSTREAM_NAME", "\"ClawProxyHub\"")
         buildConfigField("String", "UPSTREAM_URL", "\"https://github.com/ShadowSmallBaby/ClawProxyHub\"")

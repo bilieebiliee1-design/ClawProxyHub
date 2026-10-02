@@ -31,7 +31,12 @@ function toDate(ts: string): Date | null {
     const [y, m, d] = ts.split('-').map(Number)
     return new Date(y, m - 1, d)
   }
-  const parsed = new Date(ts)
+  // 纳秒防御（上游 normalizeTime，dff7837 前端半边）：>3 位小数时浏览器会把整段
+  // 小数连同时区偏移一并丢弃，无偏移串随后被按本地时区误读（少 8 小时）——
+  // 解析前空格转 T 并把小数截到毫秒。对既有 RFC3339（3 位毫秒）与空格形态均为恒等变换。
+  // 注意：上游同提交的后端半边（internal/admin/tasks.go 按 UTC 日界算"今日统计"）不移植——
+  // 我方核心按设备本地时区落库，照搬会引入日界错位。
+  const parsed = new Date(ts.replace(' ', 'T').replace(/(\.\d{3})\d+/, '$1'))
   return isNaN(parsed.getTime()) ? null : parsed
 }
 

@@ -79,7 +79,12 @@ var Core = "1.2.9"
 // 版本徽标与关于页、APK versionName 统一口径（验收回归：AAR 内 Mobile 滞留 1.1.0，
 // bridge Version() 串三处不一致）。
 // 1.1.0（2026-09-26）：随 APK v1.1.0（versionCode 2）全面改版同步。
-var Mobile = "1.4.5"
+// 1.4.6（2026-10-02）：随 APK v1.4.6（versionCode 11）同步——上游核心增量零
+// （97b3b68 之后 0 新提交，Go 代码零改动、内置 25 插件 @0f52234 无重编）；面板
+// 五项遗留缺陷修复（概览统计卡竖排、设置 6 tab 溢出、密钥创建弹窗折叠线下、
+// mobile.css 头注释触控口径、format.ts toDate 纳秒防御）；面板 dist 重嵌入、
+// AAR 随 Mobile 位重编（版本链六处一致口径）。
+var Mobile = "1.4.6"
 
 // String 完整版本串："mobile (core x)" 形态，供 bridge.Version() 与关于页展示。
 func String() string { return Mobile + " (core " + Core + ")" }

@@ -180,23 +180,70 @@
         </div>
       </t-tab-panel>
     </c-tabs>
+
+    <!-- 手机端：当前分区标题条 + 悬浮菜单切分区（上游 FAB 路线最小版：6 分区全部可达，
+         系统信息保留在分区内容内；复用 $t('settings.*') 标签，零新 i18n） -->
+    <div v-if="isPhone" class="phone-tab">{{ currentTabLabel }}</div>
+    <mobile-fab v-if="isPhone">
+      <t-popup v-model:visible="menuOpen" placement="top-right" trigger="click">
+        <t-button theme="primary" shape="circle" size="large" :aria-label="$t('menu.settings')">
+          <template #icon><setting-icon /></template>
+        </t-button>
+        <template #content>
+          <div class="phone-menu">
+            <div
+              v-for="o in tabOptions"
+              :key="o.value"
+              class="phone-menu-item"
+              :class="{ on: tab === o.value }"
+              @click="pickTab(o.value)"
+            >
+              {{ o.label }}
+            </div>
+          </div>
+        </template>
+      </t-popup>
+    </mobile-fab>
   </div>
 </template>
 
 <script setup lang="ts">
-import { CTabs } from '../../components/base'
+import { CTabs, MobileFab } from '../../components/base'
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next'
-import { DeleteIcon, DownloadIcon, UploadIcon } from 'tdesign-icons-vue-next'
+import { DeleteIcon, DownloadIcon, UploadIcon, SettingIcon } from 'tdesign-icons-vue-next'
 import { settingsApi, systemApi, uploadLuahost, type SysInfo } from '../../api/settings'
 import { logsApi } from '../../api/logs'
 import { refreshBranding } from '../../utils/branding'
 import { fmtDateTime } from '../../utils/format'
+import { useMediaQuery } from '../../composables'
 
 const { t } = useI18n()
 
+// 窄屏（≤768px，与 useMediaQuery/mobile.css 单断点一致；上游 useIsMobile 767/1024
+// 双断点换算到我方 768 单断点）：tab 头隐藏，由 FAB 菜单切换分区
+const { matches: isPhone } = useMediaQuery()
+
 const tab = ref('gateway')
+const menuOpen = ref(false)
+
+// 六个分区选项（标签复用 tab 头既有 i18n key）；手机端悬浮菜单数据源
+const tabOptions = computed(() => [
+  { value: 'gateway', label: t('settings.gateway') },
+  { value: 'network', label: t('settings.network') },
+  { value: 'logs', label: t('settings.logs') },
+  { value: 'task', label: t('settings.task') },
+  { value: 'plugin', label: t('settings.plugin') },
+  { value: 'system', label: t('settings.system') },
+])
+const currentTabLabel = computed(() => tabOptions.value.find((o) => o.value === tab.value)?.label ?? '')
+
+// 悬浮菜单切分区：选完自动收起
+function pickTab(v: string) {
+  menuOpen.value = false
+  tab.value = v
+}
 const gwForm = reactive({ first_event_timeout: 60, first_token_timeout: 120, max_retries: 3, user_agent: '', browser_user_agent: '', context_truncate_enabled: true, context_truncate_ratio: 0.9, context_bytes_per_token: 3.5 })
 const netForm = reactive({ github_proxy: '', tunnel_expose_admin: false, lan_enabled: true })
 const logForm = reactive({ log_retention_days: 0, run_level: 'info' })
@@ -426,5 +473,40 @@ onMounted(load)
   border-radius: 10px;
   border: 1px solid var(--td-component-border);
   object-fit: cover;
+}
+
+/* 手机端：tab 头隐藏（FAB 菜单替代），当前分区标题条 + 顶部预留防重叠 */
+@media (max-width: 768px) {
+  .settings-tabs :deep(.t-tabs__header) {
+    display: none;
+  }
+  /* phone-tab 为 fixed 定位（头部 56px + 刘海 inset 之下 7px 处），页面顶部预留标题高度 */
+  .settings-page {
+    padding-top: 40px !important;
+  }
+}
+.phone-tab {
+  position: fixed;
+  top: calc(63px + env(safe-area-inset-top));
+  left: 12px;
+  z-index: 90;
+  font-size: 15px;
+  font-weight: 700;
+  pointer-events: none;
+}
+.phone-menu {
+  display: flex;
+  flex-direction: column;
+  min-width: 140px;
+}
+.phone-menu-item {
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.phone-menu-item.on {
+  color: var(--td-brand-color);
+  background: var(--td-brand-color-light);
+  font-weight: 600;
 }
 </style>
