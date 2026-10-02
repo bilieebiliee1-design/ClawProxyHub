@@ -116,7 +116,7 @@ NexPort 是本项目（ClawProxyHub）的**安卓移植版**：同一个 Go 核�
 分组、密钥、任务调度、插件市场）搬进手机，应用内一键完成核心启动、插件安装、临时
 隧道与后台保活，面板内嵌 WebView，开箱即用；两端共享同一核心与同一套插件生态。
 
-- **安装包（APK）**：本仓库 [Releases](https://github.com/bilieebiliee1-design/ClawProxyHub/releases) 提供（当前 v1.4.1，附 APK/AAB 与校验和）；也可从 [`mobile-port` 分支](https://github.com/bilieebiliee1-design/ClawProxyHub/tree/mobile-port)自行构建。
+- **安装包（APK）**：本仓库 [Releases](https://github.com/bilieebiliee1-design/ClawProxyHub/releases) 提供（当前 v1.4.6，附 APK/AAB 与校验和）；也可从 [`mobile-port` 分支](https://github.com/bilieebiliee1-design/ClawProxyHub/tree/mobile-port)自行构建。
 - **完整源码**：本仓库 [`mobile-port` 分支](https://github.com/bilieebiliee1-design/ClawProxyHub/tree/mobile-port)（含构建脚本与内置插件对应源码，AGPL-3.0）
 
 ### 为什么已有桌面端还要做移动端
