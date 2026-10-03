@@ -92,7 +92,14 @@ var Core = "1.2.9"
 // （升级后首启 ANR 最强候选；解密结果进程内缓存随核心会话失效）；④核心 RUNNING
 // 前工作线程预热 BridgeVersion（关于/首页主线程首调只读缓存）；⑤ABI 拆分
 // （arm64 专用/x86_64 专用/universal 三 APK，发行附 arm64 专用包）。
-var Mobile = "1.4.7"
+// 1.4.8（2026-10-03）：随 APK v1.4.8（versionCode 13）同步——如实性修复轮：
+// ①密钥掩码派生修复（adminapi keyMask 由 sha256(id|createdAt) 改为明文尾 8 位，
+// 首页/面板「cph-****」尾缀与 reveal 明文一致；存量哈希密钥/解密失败回退旧识别
+// 哈希口径，零 DB 迁移）；②首启引导 Step4 自启文案改如实（懒启动：仅已配置
+// 账号的插件随核心自启，其余按需启动）；③v1.4.7 发行文档债闭合（dist 校验和
+// 与说明回退为 Release v1.4.7 实际发行 r2 资产）。AAR 随 Mobile 位与 keys.go
+// 改动重编（版本链六处一致口径）。
+var Mobile = "1.4.8"
 
 // String 完整版本串："mobile (core x)" 形态，供 bridge.Version() 与关于页展示。
 func String() string { return Mobile + " (core " + Core + ")" }

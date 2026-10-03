@@ -22,4 +22,9 @@ bash tools/prepare-android.sh
 # 2) release APK + AAB（AGP 9.4.0，Gradle 9.6.1；packaging.jniLibs.useLegacyPackaging=true）
 "$GRADLE" --console=plain :app:assembleRelease :app:bundleRelease
 
+# 3) 规范产物名（v1.4.7 起 splits.abi 启用：universal 包补挂头注承诺的硬性位置
+#    app-release.apk——splits 后 AGP 产 app-universal-release.apk，模拟器验收与
+#    发行打包依赖该固定路径；universal=双 ABI 全量，与该路径历史口径一致）
+cp app/build/outputs/apk/release/app-universal-release.apk app/build/outputs/apk/release/app-release.apk
+
 ls -la app/build/outputs/apk/release/ app/build/outputs/bundle/release/

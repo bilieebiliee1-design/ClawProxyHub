@@ -9,16 +9,36 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 
 	"io.nexport.gateway/core/account"
 	"io.nexport.gateway/core/model"
 )
 
-// keyMask 密钥掩码：id + 创建时间哈希前 4 字节（不泄露明文，仅用于识别）。
-func keyMask(id int64, createdAt time.Time) string {
-	h := sha256.Sum256([]byte(fmt.Sprintf("%d|%s", id, createdAt.Format("2006-01-02 15:04:05"))))
+// keyMask 密钥掩码：明文尾 8 位（cph-****<尾8位>），与「眼睛」回显的明文一致，
+// 用户可与已复制明文直接核对（v1.4.8 修复：旧掩码为 id+创建时间哈希，与明文尾缀无关）。
+// 明文不可得时回退旧口径 id + 创建时间哈希前 4 字节（仅识别用，与明文尾缀无对应）：
+//   - 存量 sha256 哈希密钥（KeyCipher 64 位 hex，明文未存，reveal 亦提示重建）；
+//   - 解密失败/密文异常（解密结果非 cph- 前缀视为不可信，不展示乱码尾缀）。
+func keyMask(dataDir string, k model.Key) string {
+	if tail := plainTail(dataDir, k.KeyCipher); tail != "" {
+		return fmt.Sprintf("cph-****%s", tail)
+	}
+	h := sha256.Sum256([]byte(fmt.Sprintf("%d|%s", k.ID, k.CreatedAt.Format("2006-01-02 15:04:05"))))
 	return fmt.Sprintf("cph-****%s", hex.EncodeToString(h[:4]))
+}
+
+// plainTail 可解密新格式密钥（0x01 前缀 AES-256-GCM）的明文尾 8 位；不可得返回空。
+// 存量哈希密钥判定与 revealKey 一致（64 位 hex 且无 0x01 前缀）；解密结果须为
+// cph- 前缀（createKey 固定格式）且长度足够，否则视为解密失败不派生。
+func plainTail(dataDir string, cipher string) string {
+	if len(cipher) == 64 && cipher[0] != 0x01 {
+		return "" // 存量 sha256 hex：明文未存，无法派生
+	}
+	raw := string(account.DecryptCredential(dataDir, []byte(cipher)))
+	if !strings.HasPrefix(raw, "cph-") || len(raw) < len("cph-")+8 {
+		return ""
+	}
+	return raw[len(raw)-8:]
 }
 
 // listKeys GET /admin/keys — 密钥列表（含授权路由）。
@@ -52,14 +72,14 @@ func (s *Server) listKeys(w http.ResponseWriter, r *http.Request) {
 		ExpiresAt  *string `json:"expires_at"`
 		CreatedAt  string  `json:"created_at"`
 		LastUsedAt string  `json:"last_used_at"` // 最后调用（空 = 从未）
-		KeyMask    string  `json:"key_mask"`     // 掩码（cph-****abcd）
+		KeyMask    string  `json:"key_mask"`     // 掩码（cph-****<明文尾8位>；明文不可得时为识别哈希）
 		RouteIDs   []int64 `json:"route_ids"`    // 空 = 全部路由
 	}
 	var out []keyView
 	for _, k := range keys {
 		v := keyView{ID: k.ID, Name: k.Name, Enabled: k.Enabled,
 			CreatedAt:  k.CreatedAt.Format("2006-01-02 15:04:05"),
-			LastUsedAt: lastUseMap[k.ID], KeyMask: keyMask(k.ID, k.CreatedAt)}
+			LastUsedAt: lastUseMap[k.ID], KeyMask: keyMask(s.accounts.DataDir(), k)}
 		if k.ExpiresAt != nil {
 			t := k.ExpiresAt.Format("2006-01-02 15:04:05")
 			v.ExpiresAt = &t

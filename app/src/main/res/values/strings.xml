@@ -71,9 +71,11 @@
     <!-- ===== 引导 Step3：使用指南 ===== -->
     <string name="onboard_title_guide">快速上手</string>
     <!-- v1.3.0 ⑤：与官方源 index 全量内置 Go 插件的现状对齐（原「安卓端仅可
-         安装 Lua 插件」旧文案清除）；v1.4.4：10 → 25（上游 @0f52234 全量） -->
+         安装 Lua 插件」旧文案清除）；v1.4.4：10 → 25（上游 @0f52234 全量）；
+         v1.4.8：自启表述改如实（v1.4.7 起核心懒启动——仅已配置账号的插件随核心
+         自启，其余按需启动，与 plugmgr AutoStarts 账号门槛一致） -->
     <string name="guide_plugins_title">认识插件</string>
-    <string name="guide_plugins_text">打开管理面板 → 插件 → 市场。官方源 index 的 25 个 Go 插件已全部随 APK 内置，核心启动即自动加载，无需安装；Lua 插件可经 市场 / 自建源 / 离线上传 在线安装。</string>
+    <string name="guide_plugins_text">打开管理面板 → 插件 → 市场。官方源 index 的 25 个 Go 插件已全部随 APK 内置，无需安装；核心启动时仅已配置账号的插件自动启动，其余插件按需启动（在插件卡点「启动」，配置账号后的下次核心启动自动纳入自启）。Lua 插件可经 市场 / 自建源 / 离线上传 在线安装。</string>
     <string name="guide_tunnel_title">临时隧道默认关闭</string>
     <string name="guide_tunnel_text">隧道会把网关 API 暴露到公网临时域名，cph-* 密钥是唯一防线。确需远程调用时在主界面开启，用完即断。</string>
     <string name="guide_bg_title">保持后台运行</string>
@@ -95,7 +97,7 @@
     <string name="guide_lan_text">除本机 127.0.0.1 外，核心默认在同一端口额外监听本机局域网地址：仅开放 /v1（强制 API 密钥鉴权）与 /health，面板与管理 API 永不暴露；首页可查看局域网端点，面板「设置」可关闭局域网监听。</string>
 
     <string name="guide_goplugin_title">关于 Go 插件</string>
-    <string name="guide_goplugin_text">本包已内置官方源 index 全量 25 个 Go 插件：chatjimmy、cline、codearts、codebuff、commandcode、doubao、gorkcli、ima、improvado、joycode、lobsterai、loomy、mimo、mirasim、newapi、notion、opencode、postman、puter、qoder、raccoon、todofor、trae、workbuddy、zcode——核心启动即自动加载，无需安装。安卓应用数据目录禁止执行下载的二进制（targetSdk 29+ noexec），Go 插件无法在线安装/升级，只能随 APK 更新。</string>
+    <string name="guide_goplugin_text">本包已内置官方源 index 全量 25 个 Go 插件：chatjimmy、cline、codearts、codebuff、commandcode、doubao、gorkcli、ima、improvado、joycode、lobsterai、loomy、mimo、mirasim、newapi、notion、opencode、postman、puter、qoder、raccoon、todofor、trae、workbuddy、zcode——全部无需安装；核心启动时仅已配置账号的插件自动启动，其余按需启动（插件卡「启动」手动拉起，配置账号后的下次核心启动自动纳入自启）。安卓应用数据目录禁止执行下载的二进制（targetSdk 29+ noexec），Go 插件无法在线安装/升级，只能随 APK 更新。</string>
     <string name="guide_goplugin_preview">面板「插件 → 市场」会为每个插件标注安卓端可用性：内置 Go 插件显示内置版本、不出现升级按钮；非内置 Go 插件直接标注不可安装及原因；Lua 插件不受限，可正常在线安装。</string>
 
     <!-- 引导第4步保活授权卡（v1.4.0 ⑦）：电池优化忽略、后台运行/自启动（按厂商能力
