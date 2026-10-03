@@ -3,17 +3,23 @@
 package adminapi
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
+	"sync"
+	"time"
 
 	"google.golang.org/protobuf/encoding/protojson"
 	"gorm.io/gorm"
 
 	"io.nexport.gateway/core/account"
+	"io.nexport.gateway/core/logsink"
 	"io.nexport.gateway/core/model"
 	"io.nexport.gateway/core/plugmgr"
 	pb "io.nexport.gateway/core/sdk/proto/cphv1"
@@ -39,6 +45,9 @@ type Server struct {
 	onLanChange func()
 	// probeChat 测活聊天客户端注入（仅测试；nil = 生产用 plugins.Manager）。
 	probeChat ChatClient
+	// lazyMu 懒启动单飞锁：并发请求同时拉起同一未运行插件会重复 spawn 子进程
+	//（plugmgr.Start 成功后按名写实例表，后写覆盖先写 → 先写的进程泄漏），须串行化。
+	lazyMu sync.Mutex
 }
 
 // New 创建管理后台；表空且配置了 CPH_ADMIN_PASSWORD 时自动引导建号。
@@ -261,11 +270,74 @@ func (s *Server) listPlugins(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]interface{}{"plugins": out})
 }
 
+// lazyStartTimeout 懒启动整体超时：go-plugin 子进程 spawn + 握手实测 ~1s 量级，
+// 10s 余量覆盖低端机/负载尖峰（app.Start 自启批处理并发 spawn 期），防止添加账号
+// 请求无限挂住（admin HTTP server 无 WriteTimeout，须由本超时兜底）。
+const lazyStartTimeout = 10 * time.Second
+
+// ensurePluginRunning 懒启动（v1.4.10 回归根治）：v1.4.7 起开机自启仅拉「已配置账号」
+// 的插件（app.Start → plugmgr.AutoStarts 双重过滤），未运行插件成为常态——添加账号
+// 链路（auth-methods / accounts/login）此前对未运行插件直接 gRPC 失败 → 404「未启用
+// 该插件」，与面板深链「点供应商加账号」组合即用户报告的回归。
+// 此处对未运行插件按需拉起子进程：目录定位 + Start 复用自启路径（app.go 自启批处理
+// 与 startPlugin 均走 plugmgr.Manager.Start），成功后清持久化停止态并刷新模型目录，
+// 对添加账号场景完全透明；整体超时 10s，失败/超时返回明确错误（调用方一律 503）。
+// 已运行（含崩溃自愈重启）直接放行；单飞锁 + 双检防并发重复 spawn。
+func (s *Server) ensurePluginRunning(ctx context.Context, name string) error {
+	if _, ok := s.plugins.Get(name); ok {
+		return nil
+	}
+	s.lazyMu.Lock()
+	defer s.lazyMu.Unlock()
+	if _, ok := s.plugins.Get(name); ok { // 等锁期间已被并发请求拉起
+		return nil
+	}
+	bins, err := s.plugins.Scan()
+	if err != nil {
+		return fmt.Errorf("插件 %q 启动失败: 扫描插件目录: %w", name, err)
+	}
+	for _, bin := range bins {
+		if filepath.Base(bin) != name { // Scan 返回插件目录，键控与 startPlugin/AutoStarts 一致
+			continue
+		}
+		startCtx, cancel := context.WithTimeout(ctx, lazyStartTimeout)
+		defer cancel()
+		type startResult struct {
+			err error
+		}
+		done := make(chan startResult, 1) // 带缓冲：超时放行后 Start 仍可在后台收敛，goroutine 不阻塞
+		go func() {
+			_, err := s.plugins.Start(startCtx, bin)
+			done <- startResult{err: err}
+		}()
+		select {
+		case res := <-done:
+			if res.err != nil {
+				logsink.Printf("[plugin] lazy start %s failed: %v", name, res.err)
+				return fmt.Errorf("插件 %q 启动失败: %w", name, res.err)
+			}
+		case <-startCtx.Done():
+			logsink.Printf("[plugin] lazy start %s timed out after %s", name, lazyStartTimeout)
+			return fmt.Errorf("插件 %q 启动超时（%s），请稍后重试或到插件页手动启动", name, lazyStartTimeout)
+		}
+		s.plugins.Resume(name) // 与 startPlugin 同语义：显式使用即恢复自启资格
+		s.plugins.RefreshCatalog(startCtx)
+		logsink.Printf("[plugin] lazy started %s (add-account path)", name)
+		return nil
+	}
+	return fmt.Errorf("插件 %q 未安装或二进制缺失，无法启动", name)
+}
+
 // authMethods GET /admin/plugins/{name}/auth-methods — 授权方式详情（渲染 tab + 表单）。
 func (s *Server) authMethods(w http.ResponseWriter, r *http.Request) {
-	methods, err := s.accounts.AuthMethods(r.PathValue("name"))
+	name := r.PathValue("name")
+	if err := s.ensurePluginRunning(r.Context(), name); err != nil {
+		httpErrorJSON(w, http.StatusServiceUnavailable, err.Error())
+		return
+	}
+	methods, err := s.accounts.AuthMethods(name)
 	if err != nil {
-		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusNotFound)
+		httpErrorJSON(w, http.StatusNotFound, err.Error())
 		return
 	}
 	var out []*authMethodView
@@ -296,6 +368,12 @@ func (s *Server) submitLogin(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, `{"error":"invalid state"}`, http.StatusBadRequest)
 			return
 		}
+	}
+	// 未运行插件先按需拉起（v1.4.10 懒启动）：插件多步登录/轮询反复走本接口，
+	// 拉起仅在首个请求发生，之后 Get 命中直通。
+	if err := s.ensurePluginRunning(r.Context(), body.Plugin); err != nil {
+		httpErrorJSON(w, http.StatusServiceUnavailable, err.Error())
+		return
 	}
 	outcome, err := s.accounts.SubmitLogin(r.Context(), body.Plugin, body.MethodID, body.Form, state, body.InstanceID)
 	if err != nil {
@@ -500,6 +578,13 @@ func writeJSON(w http.ResponseWriter, status int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	json.NewEncoder(w).Encode(v)
+}
+
+// httpErrorJSON JSON 安全的错误响应：err 文本（插件名/上游错误）可能含引号，
+// 沿用 `{"error":"`+err+`"}` 手工拼接会产生非法 JSON，前端只能拿到原文兜底；
+// 统一经 encoding/json 编码。
+func httpErrorJSON(w http.ResponseWriter, status int, msg string) {
+	writeJSON(w, status, map[string]string{"error": msg})
 }
 
 func readBody(w http.ResponseWriter, r *http.Request, v interface{}) bool {

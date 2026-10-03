@@ -150,16 +150,20 @@
     <!-- 添加账号：向导（选择客户端 → 授权 → 配置） -->
     <c-dialog v-model:visible="addVisible" :header="$t('accounts.add')" :footer="false" width="680px" :close-on-overlay-click="false">
 
-      <!-- 第一步：选择客户端（卡片平铺，每行四个；登录要走插件进程，只列运行中的） -->
+      <!-- 第一步：选择客户端（卡片平铺，每行四个；列全部已安装插件并标注运行状态——
+           未运行插件点选后由核心按需拉起（懒启动 ~1s），不再拦截） -->
       <template v-if="wizardStep === 'select'">
-        <t-empty v-if="!runningPlugins.length" :description="$t('accounts.noPlugins')" />
+        <t-empty v-if="!plugins.length" :description="$t('accounts.noPlugins')" />
         <div v-else class="client-grid">
-          <div v-for="p in runningPlugins" :key="p.id" class="client-card" @click="choosePlugin(p)">
+          <div v-for="p in plugins" :key="p.id" class="client-card" @click="choosePlugin(p)">
             <div class="client-head">
               <entity-icon :icon="p.icon" :name="p.label || p.name" />
               <div class="client-name">{{ p.label || p.name }}</div>
             </div>
             <div class="client-caps">
+              <t-tag size="small" :theme="p.running ? 'success' : 'default'" variant="light">
+                {{ p.running ? $t('accounts.pluginRunning') : $t('accounts.pluginStopped') }}
+              </t-tag>
               <t-tag v-for="c in (p.capabilities ?? []).slice(0, 3)" :key="c" size="small" variant="light">
                 {{ dict(capabilityDict, c) }}
               </t-tag>
@@ -173,6 +177,11 @@
         <div class="wizard-back">
           <t-link theme="primary" @click="wizardStep = 'select'">{{ $t('accounts.backToSelect') }}</t-link>
           <span class="wizard-client">{{ selectedPluginLabel }}</span>
+        </div>
+
+        <!-- 未运行插件懒启动加载态：核心按需拉起插件子进程需 ~1s（超时 10s 由核心兜底报 503） -->
+        <div v-if="startingPlugin" class="starting-row">
+          <t-loading size="small" :text="$t('accounts.startingPlugin')" />
         </div>
 
         <!-- 目标实例（站点）：仅多实例插件展示；无实例时先去新建 -->
@@ -420,8 +429,8 @@ const router = useRouter()
 const { matches: isMobile } = useMediaQuery()
 
 const plugins = ref<PluginInfo[]>([])
-// 已停止的插件仍在列表里（账号列品牌名要查得到），但新建账号只能选运行中的
-const runningPlugins = computed(() => plugins.value.filter((p) => p.running))
+// 选择器列全部已安装插件（含未运行：v1.4.10 起核心对添加账号链路按需拉起插件，
+// 运行状态仅作卡片标注，不再作为可选门槛）
 const accounts = ref<Account[]>([])
 const groups = ref<GroupInfo[]>([])
 const instances = ref<InstanceInfo[]>([])
@@ -854,15 +863,26 @@ function openAdd() {
   stopPolling()
 }
 
-// 第一步点选客户端 → 进入授权（按插件拉实例列表，保证默认实例存在并预选第一个）
+// 第一步点选客户端 → 进入授权（按插件拉实例列表，保证默认实例存在并预选第一个）。
+// 未运行插件：auth-methods 在核心侧按需拉起插件子进程（懒启动，实测 ~1s），
+// 期间展示『正在启动插件…』加载态；拉起失败（503，含超时/未安装）提示后退回选择步。
+const startingPlugin = ref(false)
 async function choosePlugin(p: PluginInfo) {
   pluginName.value = p.name
   wizardStep.value = 'auth'
-  loadMethods(p.name)
-  const resp = await instanceApi.list(p.id).catch(() => ({ instances: [] }))
-  const list = resp.instances ?? []
-  instances.value = [...instances.value.filter((i) => i.plugin_id !== p.id), ...list]
-  wizardInstanceId.value = list[0]?.id
+  startingPlugin.value = !p.running
+  const ins = instanceApi.list(p.id).catch(() => ({ instances: [] }))
+  try {
+    await loadMethods(p.name)
+    const list = (await ins).instances ?? []
+    instances.value = [...instances.value.filter((i) => i.plugin_id !== p.id), ...list]
+    wizardInstanceId.value = list[0]?.id
+  } catch (e: any) {
+    MessagePlugin.error(e?.message || String(e))
+    wizardStep.value = 'select'
+  } finally {
+    startingPlugin.value = false
+  }
 }
 
 async function loadMethods(name: string) {
@@ -1056,7 +1076,8 @@ function askRemove(row: Account) {
 // ---------- 深链：/accounts?add=1&plugin=<插件名> ----------
 // 供应用首页供应商板块直达『添加账号』并预选指定插件；插件名以 /admin/plugins 的
 // name 为准（不是 label）。本地访问 /accounts?...，隧道侧 /panel/accounts?...。
-// 插件未运行/不存在：仍打开向导停在选卡步骤，提示后可手选。
+// v1.4.10：去掉 running 门槛——未运行插件由核心按需拉起（懒启动，选择步/授权步
+// 均有加载态）；仅插件未安装/不存在时提示后停在选卡步骤。
 const deepLinkHandled = ref(false)
 async function handleDeepLink() {
   if (deepLinkHandled.value || route.query.add === undefined) return
@@ -1065,7 +1086,7 @@ async function handleDeepLink() {
   const name = String(route.query.plugin ?? '').trim()
   if (!name) return
   const p = plugins.value.find((x) => x.name === name)
-  if (p?.running) {
+  if (p) {
     await choosePlugin(p)
   } else {
     MessagePlugin.warning(t('accounts.pluginUnavailable', { name }))
@@ -1195,6 +1216,13 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+/* 懒启动加载态行：插件按需拉起期间的选择步/授权步反馈 */
+.starting-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px 0;
 }
 .wizard-client {
   font-weight: 600;

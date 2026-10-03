@@ -108,7 +108,17 @@ var Core = "1.2.9"
 // M2 授权流依赖）；③AdminApi 扩展（auth-methods/login 提交/插件幂等拉起）。
 // 核心语义 Core 位不变（1.2.9，本轮 Go 代码零改动），AAR 随 Mobile 位重编
 // （版本链六处一致口径）。
-var Mobile = "1.4.9"
+// 1.4.10（2026-10-03）：随 APK v1.4.10（versionCode 15）同步——懒启动×添加账号
+// 回归根治轮（用户报告：v1.4.7 懒启动后未运行插件无法添加账号/首页供应商直达被拦）：
+// ①核心懒启动（adminapi）：auth-methods 与 accounts/login 对未运行插件按需拉起
+// 子进程（ensurePluginRunning，复用自启路径 plugmgr.Start；单飞锁防并发重复
+// spawn；整体超时 10s；失败/超时 503 + 可读原因，错误体改 JSON 安全编码）；
+// ②面板：添加账号插件选择器列全部已安装插件并标注运行状态（原仅列运行中），
+// 深链 /accounts?add=1&plugin= 去掉 running 门槛，未运行插件选中后展示
+// 『正在启动插件…』加载态；③首页供应商点击拦截实为 ② 的深链门槛（HomeFragment
+// 本就渲染全部已安装插件，无运行状态过滤）。AAR 随核心 adminapi 改动与 Mobile
+// 位重编，面板 dist 重嵌入（版本链六处一致口径）。
+var Mobile = "1.4.10"
 
 // String 完整版本串："mobile (core x)" 形态，供 bridge.Version() 与关于页展示。
 func String() string { return Mobile + " (core " + Core + ")" }

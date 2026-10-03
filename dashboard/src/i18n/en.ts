@@ -595,7 +595,10 @@ export default {
   },
   accounts: {
     add: 'Add Account',
-    pluginUnavailable: 'Plugin "{name}" is not running or does not exist; pick one from the list',
+    pluginUnavailable: 'Plugin "{name}" is not installed or does not exist; pick one from the list',
+    pluginRunning: 'Running',
+    pluginStopped: 'Not running',
+    startingPlugin: 'Starting plugin…',
     account: 'Account',
     instance: 'Instance',
     filterInstance: 'Filter by plugin · instance',

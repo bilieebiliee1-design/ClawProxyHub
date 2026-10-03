@@ -595,7 +595,10 @@ export default {
   },
   accounts: {
     add: '添加账号',
-    pluginUnavailable: '插件「{name}」未运行或不存在，请在列表中选择',
+    pluginUnavailable: '插件「{name}」未安装或不存在，请在列表中选择',
+    pluginRunning: '运行中',
+    pluginStopped: '未运行',
+    startingPlugin: '正在启动插件…',
     account: '账号',
     instance: '实例',
     filterInstance: '按插件 · 实例筛选',
