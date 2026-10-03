@@ -99,7 +99,16 @@ var Core = "1.2.9"
 // 账号的插件随核心自启，其余按需启动）；③v1.4.7 发行文档债闭合（dist 校验和
 // 与说明回退为 Release v1.4.7 实际发行 r2 资产）。AAR 随 Mobile 位与 keys.go
 // 改动重编（版本链六处一致口径）。
-var Mobile = "1.4.8"
+// 1.4.9（2026-10-03）：随 APK v1.4.9（versionCode 14）同步——浏览器辅助登录轮：
+// ①壳层新增「浏览器登录助手」（BrowserLoginActivity：应用内 WebView 登录供应商站点
+// → CookieManager.getCookie 提取 → 按配方表预填 → POST /admin/accounts/login 建档，
+// 覆盖 doubao/loomy/postman/improvado/notion/ima/puter 的 Cookie/site-token 类方法）；
+// ②壳层 nexport-assist:// 外链垫片（PanelFragment window.open 覆写 → Custom Tabs，
+// QA 实测面板 WebView 配置下 window.open('_blank') 被吞，open_url 链路靠此垫片可达，
+// M2 授权流依赖）；③AdminApi 扩展（auth-methods/login 提交/插件幂等拉起）。
+// 核心语义 Core 位不变（1.2.9，本轮 Go 代码零改动），AAR 随 Mobile 位重编
+// （版本链六处一致口径）。
+var Mobile = "1.4.9"
 
 // String 完整版本串："mobile (core x)" 形态，供 bridge.Version() 与关于页展示。
 func String() string { return Mobile + " (core " + Core + ")" }

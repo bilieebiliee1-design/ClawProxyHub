@@ -6,7 +6,7 @@
 
 NexPort 安卓版把 ClawProxyHub 的 Go 核心（网关、路由、账号、分组、密钥、任务调度、市场）
 原样搬进一部手机：应用内完成引导、启动、装插件、开临时隧道、后台保活，面板就长在
-WebView 里。当前版本 **v1.4.8（versionCode 13）**。
+WebView 里。当前版本 **v1.4.9（versionCode 14）**。
 
 ## 系统要求与设备兼容性
 
@@ -94,7 +94,7 @@ ClawProxyHub 的架构本来就是插件化的：核心只管网关、路由、�
 
 ### 获取安装包
 
-- **安卓 APK**：本仓库 [Releases](https://github.com/bilieebiliee1-design/ClawProxyHub/releases) 页提供（当前 v1.4.8，按 ABI 拆分附 arm64-v8a 专用 / x86_64 专用 / universal 三个 APK + AAB 与 SHA256 校验和；手机用户取 arm64 专用包）；也可以按下方步骤自行构建。
+- **安卓 APK**：本仓库 [Releases](https://github.com/bilieebiliee1-design/ClawProxyHub/releases) 页提供（当前 v1.4.9，按 ABI 拆分附 arm64-v8a 专用 / x86_64 专用 / universal 三个 APK + AAB 与 SHA256 校验和；手机用户取 arm64 专用包）；也可以按下方步骤自行构建。
 - **桌面版**：上游 [ShadowSmallBaby/ClawProxyHub](https://github.com/ShadowSmallBaby/ClawProxyHub)。
 - **源码**：安卓端完整源码即本分支 `mobile-port`；桌面端在 `main` 分支（上游内容）。
 
@@ -170,7 +170,7 @@ go run ./cmd/nexcore   # env CPH_DATA_DIR=./data；curl 127.0.0.1:<port>/health
    预打包）；市场安装仅放行 runtime=lua 包，Go 包明确拒绝（内置 Go 插件除外，
    二进制随 APK 经 nativeLibraryDir 提供）。
 7. **服务端密码策略加强**：/admin/setup 要求 ≥10 位含大小写与数字（原生引导同规）。
-8. **版本位**：`version.Core`（1.2.9，随上游 SDK v1.2.2 / fb6475c 移植同步）+ `version.Mobile`（1.4.8，随 APK versionName/versionCode 同步）。
+8. **版本位**：`version.Core`（1.2.9，随上游 SDK v1.2.2 / fb6475c 移植同步）+ `version.Mobile`（1.4.9，随 APK versionName/versionCode 同步）。
 
 <details>
 <summary><strong>附：v1.3.0 核心侧改造记录（本地修订，展开阅读）</strong></summary>

@@ -767,6 +767,16 @@ class HomeFragment : Fragment() {
             setBackgroundResource(tv.resourceId)
             setPadding(c.dp(4), c.dp(12), c.dp(4), c.dp(12))
             setOnClickListener { openRoute("/accounts?add=1&plugin=$name") }
+            // v1.4.9 ① 浏览器登录助手（M1）：长按图标唤起应用内 WebView 登录 + Cookie
+            // 预填 + 直接建档（BrowserLoginActivity 配方表内插件）；不支持者 toast 说明
+            setOnLongClickListener {
+                if (BrowserLoginActivity.supports(name)) {
+                    BrowserLoginActivity.start(requireContext(), name)
+                } else {
+                    toast(requireContext(), getString(R.string.browser_login_unsupported))
+                }
+                true
+            }
             contentDescription = c.getString(R.string.provider_add_account_fmt, label)
         }
         val cached = iconCache[name]

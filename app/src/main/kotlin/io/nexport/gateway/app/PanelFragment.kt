@@ -58,7 +58,7 @@ import com.google.android.material.progressindicator.LinearProgressIndicator
  *  - WebSettings.textZoom 按「字体大小」映射 90/100/120/140。
  *
  * 安全基线原样保留（securityPlan ④）：仅回环明文、禁 file、无 addJavascriptInterface、
- * blob 下载/文件上传两条单向 Java→JS 桥与 nexport-dl 垫片；外链 Custom Tabs。
+ * blob 下载/文件上传两条单向 Java→JS 桥与 nexport-dl/nexport-assist 垫片；外链 Custom Tabs。
  *
  * 基于 ClawProxyHub（AGPL-3.0）修改构建。
  */
@@ -414,6 +414,10 @@ class PanelFragment : Fragment() {
         val scheme = uri.scheme ?: return true
         if (scheme == "nexport-dl") { // 垫片信号：取最近一次 blob 锚点下载
             pullStashedDownload()
+            return true
+        }
+        if (scheme == "nexport-assist") { // 垫片信号（v1.4.9 ②）：面板 window.open 外链 → Custom Tabs
+            uri.getQueryParameter("u")?.let { openExternal(requireContext(), it) }
             return true
         }
         if ((scheme == "http" || scheme == "https") &&
@@ -811,6 +815,29 @@ class PanelFragment : Fragment() {
                   }
                 } catch(e) {}
                 return origClick.apply(this, arguments);
+              };
+              var origWinOpen = window.open;
+              window.open = function(u, t, f){
+                try {
+                  // v1.4.9 ② QA 实测：面板 WebView 配置（javaScriptCanOpenWindowsAutomatically
+                  // =false + setSupportMultipleWindows=false）下 window.open('_blank') 被整体
+                  // 吞掉（无导航、不触发 shouldOverrideUrlLoading），M2 open_url 链路断在
+                  // 第一跳。照 nexport-dl 垫片先例：非本机 http(s) 外链改道
+                  // nexport-assist://open?u=…，由壳层 handleUrl → openExternal（Custom Tabs）。
+                  if (typeof u === 'string' &&
+                      (u.indexOf('https:') === 0 || u.indexOf('http:') === 0)) {
+                    var a = document.createElement('a'); a.href = u;
+                    var h = a.hostname;
+                    if (h !== '127.0.0.1' && h !== 'localhost') {
+                      setTimeout(function(){
+                        try { window.location.href = 'nexport-assist://open?u=' + encodeURIComponent(u); }
+                        catch(e) {}
+                      }, 0);
+                      return null;
+                    }
+                  }
+                } catch(e) {}
+                return origWinOpen.apply(window, arguments);
               };
             })(); void 0
         """.trimIndent()

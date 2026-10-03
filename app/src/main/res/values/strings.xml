@@ -419,9 +419,35 @@
 
     <!-- ===== v1.4.0 ③：供应商板块 ===== -->
     <string name="providers_section">供应商</string>
-    <string name="providers_subtitle">点击供应商 → 面板「账号 → 添加账号」自动预选该插件（自动建分组/路由/密钥）</string>
+    <string name="providers_subtitle">点击供应商 → 面板「账号 → 添加账号」自动预选该插件（自动建分组/路由/密钥）；支持 Cookie 登录的插件可长按图标唤起「浏览器登录助手」</string>
     <string name="providers_empty">核心运行后显示已安装的供应商（与面板插件列表实时同步）</string>
     <string name="provider_add_account_fmt">添加 %1$s 账号</string>
+
+    <!-- ===== v1.4.9 ①：浏览器登录助手（M1 Cookie 预填） ===== -->
+    <string name="browser_login_title">浏览器登录助手</string>
+    <string name="browser_login_pick_prompt">选择要登录的供应商（在页面完成登录后点「提取并填入」自动建档）</string>
+    <string name="browser_login_extract">提取并填入</string>
+    <string name="browser_login_reload">重新打开登录页</string>
+    <string name="browser_login_status_idle">在本页完成登录后，点下方「提取并填入」。</string>
+    <string name="browser_login_extracting">正在提取…</string>
+    <string name="browser_login_got_cookie">已提取 Cookie（%1$d 项）</string>
+    <string name="browser_login_got_storage">已从页面存储提取 token</string>
+    <string name="browser_login_no_cookie">未能提取到 Cookie：请先在本页面完成登录，再点「提取并填入」。</string>
+    <string name="browser_login_manual_hint">带 * 为必填。自动提取项已预填，可修改；其余必填项请手动补充。</string>
+    <string name="browser_login_optional">%1$s（可选）</string>
+    <string name="browser_login_missing_required">请补齐必填字段：%1$s</string>
+    <string name="browser_login_submit">提交建档</string>
+    <string name="browser_login_back">返回</string>
+    <string name="browser_login_copy">复制</string>
+    <string name="browser_login_submitting">正在提交…</string>
+    <string name="browser_login_success">建档成功（账号 #%1$d），正在返回账号列表…</string>
+    <string name="browser_login_success_toast">账号已创建</string>
+    <string name="browser_login_need_next">该方法需要后续步骤，正在返回面板向导继续…</string>
+    <string name="browser_login_submit_failed">提交失败：%1$s</string>
+    <string name="browser_login_core_down">核心或插件不可用，无法直接建档。可复制提取结果，回面板「添加账号」手动粘贴。</string>
+    <string name="browser_login_fallback_title">提取结果（手动模式）</string>
+    <string name="browser_login_unsupported">该插件暂不支持浏览器登录助手，请用面板「添加账号」</string>
+    <string name="browser_login_net_error">页面加载失败</string>
 
     <!-- v1.4.0 追加修复（版本号仍 1.4.0） -->
     <!-- ⑥：隧道开关行补文案（原先为无文字独立开关） -->

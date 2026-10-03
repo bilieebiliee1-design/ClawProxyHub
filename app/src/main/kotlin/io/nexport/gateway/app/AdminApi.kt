@@ -282,6 +282,131 @@ object AdminApi {
         }
     }
 
+    // ---- v1.4.9 ① 浏览器登录助手（M1 Cookie 预填）----
+
+    /**
+     * 授权方式视图（GET /admin/plugins/{name}/auth-methods，server.go authMethodView）。
+     * label/placeholder 原始为多语言 map，此处取 zh（缺失回退 en/原文）。
+     */
+    data class AuthFieldInfo(
+        val name: String,
+        val label: String,
+        val type: String,
+        val required: Boolean,
+        val placeholder: String,
+    )
+
+    data class AuthMethodInfo(
+        val id: String,
+        val label: String,
+        val fields: List<AuthFieldInfo>,
+        val callback: String,
+    )
+
+    /** 一步登录结果（POST /admin/accounts/login，server.go:278-324）。 */
+    sealed class LoginOutcome {
+        /** 建档完成。 */
+        data class Done(val accountId: Long) : LoginOutcome()
+        /** 需要后续步骤（otp/open_url 等）——助手不跟进，交回面板向导。 */
+        data class NextStep(
+            val action: String,
+            val url: String,
+            val wait: Boolean,
+        ) : LoginOutcome()
+    }
+
+    private fun labelOf(m: org.json.JSONObject?): String =
+        m?.optString("zh")?.takeIf { it.isNotEmpty() }
+            ?: m?.optString("en")?.takeIf { it.isNotEmpty() }
+            ?: ""
+
+    /**
+     * POST /admin/plugins/{name}/start（marketplace.go:415，幂等：已运行直接返回）。
+     * 助手提取预填前确保插件在线（auth-methods 与提交链都要求实例运行中）。
+     */
+    fun ensurePluginRunning(plugin: String): Boolean {
+        return try {
+            val (code, _) = call("/admin/plugins/$plugin/start", "POST", null, true)
+            if (code == 401 && tryAutoLogin()) {
+                return ensurePluginRunning(plugin)
+            }
+            code in 200..299
+        } catch (_: Exception) {
+            false
+        }
+    }
+
+    /** 插件授权方式列表（401 自动续 token；失败 null——插件未运行/未知插件等）。 */
+    fun authMethods(plugin: String): List<AuthMethodInfo>? {
+        return try {
+            val (code, text) = call("/admin/plugins/$plugin/auth-methods", "GET", null, true)
+            if (code == 401 && tryAutoLogin()) {
+                return authMethods(plugin)
+            }
+        if (code != 200) null else {
+            val arr = JSONObject(text).optJSONArray("auth_methods") ?: return null
+            (0 until arr.length()).mapNotNull { i ->
+                val o = arr.optJSONObject(i) ?: return@mapNotNull null
+                val fArr = o.optJSONArray("fields")
+                val fields = (0 until (fArr?.length() ?: 0)).mapNotNull { j ->
+                    val f = fArr!!.optJSONObject(j) ?: return@mapNotNull null
+                    AuthFieldInfo(
+                        name = f.optString("name"),
+                        label = labelOf(f.optJSONObject("label")).ifEmpty { f.optString("name") },
+                        type = f.optString("type"),
+                        required = f.optBoolean("required"),
+                        placeholder = f.optString("placeholder"),
+                    )
+                }
+                AuthMethodInfo(
+                    id = o.optString("id"),
+                    label = labelOf(o.optJSONObject("label")).ifEmpty { o.optString("id") },
+                    fields = fields,
+                    callback = o.optString("callback"),
+                )
+            }
+        }
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    /**
+     * 提交一步登录（首步）。form 空值字段剔除（可选字段留空 = 服务端默认语义）。
+     * 业务错误（凭据无效/上游拒绝）为 HTTP 400，error 原文带回。
+     */
+    fun submitLogin(plugin: String, methodId: String, form: Map<String, String>): Result<LoginOutcome> {
+        return try {
+            val formJson = JSONObject()
+            for ((k, v) in form) if (v.isNotEmpty()) formJson.put(k, v)
+            val body = JSONObject()
+                .put("plugin", plugin)
+                .put("method_id", methodId)
+                .put("form", formJson)
+            val (code, text) = call("/admin/accounts/login", "POST", body.toString(), true)
+            if (code == 401 && tryAutoLogin()) {
+                return submitLogin(plugin, methodId, form)
+            }
+            if (code !in 200..299) {
+                return Result.failure(IOException(errOf(text, code)))
+            }
+            val o = JSONObject(text)
+            if (o.optBoolean("done")) {
+                Result.success(LoginOutcome.Done(o.optLong("account_id")))
+            } else {
+                val n = o.optJSONObject("next")
+                    ?: return Result.failure(IOException("unexpected response"))
+                Result.success(LoginOutcome.NextStep(
+                    action = n.optString("action"),
+                    url = n.optString("url"),
+                    wait = n.optBoolean("wait"),
+                ))
+            }
+        } catch (t: Throwable) {
+            Result.failure(t)
+        }
+    }
+
     private fun appCtx(): android.content.Context = CoreControllerAppHolder.ctx
 }
 

@@ -43,6 +43,14 @@
             </intent-filter>
         </activity>
 
+        <!-- v1.4.9 ① 浏览器登录助手（M1）：应用内独立 WebView 登录供应商站点，
+             CookieManager 提取 + AdminApi 回环提交；仅应用内部入口（HomeFragment 长按），
+             不对外导出 -->
+        <activity
+            android:name=".app.BrowserLoginActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- 应用内语言（appcompat per-app locales）：API<33 进程被杀后持久化必须声明
              （settingsSpec general_language / 评审⑥） -->
         <service

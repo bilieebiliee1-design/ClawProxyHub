@@ -402,9 +402,35 @@
 
     <!-- v1.4.0 ③: providers section -->
     <string name="providers_section">Providers</string>
-    <string name="providers_subtitle">Tap a provider to open the panel’s “Accounts → Add account” with that plugin preselected (groups/routes/keys are auto-configured)</string>
+    <string name="providers_subtitle">Tap a provider to open the panel’s “Accounts → Add account” with that plugin preselected (groups/routes/keys are auto-configured); long-press a provider icon to launch the Browser Login Assistant for cookie-based plugins</string>
     <string name="providers_empty">Installed providers appear here once the core is running (kept in sync with the panel’s plugin list)</string>
     <string name="provider_add_account_fmt">Add %1$s account</string>
+
+    <!-- v1.4.9 ①: browser login assistant (M1 cookie prefill) -->
+    <string name="browser_login_title">Browser Login Assistant</string>
+    <string name="browser_login_pick_prompt">Choose a provider to sign in (finish login on the page, then tap “Extract &amp; prefill” to create the account)</string>
+    <string name="browser_login_extract">Extract &amp; prefill</string>
+    <string name="browser_login_reload">Reload login page</string>
+    <string name="browser_login_status_idle">Sign in on this page, then tap “Extract &amp; prefill” below.</string>
+    <string name="browser_login_extracting">Extracting…</string>
+    <string name="browser_login_got_cookie">Cookies captured (%1$d items)</string>
+    <string name="browser_login_got_storage">Token captured from page storage</string>
+    <string name="browser_login_no_cookie">No cookies captured — make sure you signed in on this page, then tap “Extract &amp; prefill”.</string>
+    <string name="browser_login_manual_hint">* = required. Auto-captured fields are prefilled and editable; fill in the remaining required fields manually.</string>
+    <string name="browser_login_optional">%1$s (optional)</string>
+    <string name="browser_login_missing_required">Please fill in required fields: %1$s</string>
+    <string name="browser_login_submit">Create account</string>
+    <string name="browser_login_back">Back</string>
+    <string name="browser_login_copy">Copy</string>
+    <string name="browser_login_submitting">Submitting…</string>
+    <string name="browser_login_success">Account #%1$d created — returning to the account list…</string>
+    <string name="browser_login_success_toast">Account created</string>
+    <string name="browser_login_need_next">This method needs extra steps — returning to the panel wizard…</string>
+    <string name="browser_login_submit_failed">Submit failed: %1$s</string>
+    <string name="browser_login_core_down">Core or plugin unavailable; cannot create the account here. Copy the captured value and paste it in the panel’s “Add account”.</string>
+    <string name="browser_login_fallback_title">Captured value (manual mode)</string>
+    <string name="browser_login_unsupported">Browser Login Assistant is not available for this plugin — use the panel’s “Add account”</string>
+    <string name="browser_login_net_error">Page failed to load</string>
 
     <!-- v1.4.0 follow-up fixes (version stays 1.4.0) -->
     <string name="tunnel_switch_sub">Enabling exposes the gateway API on a public ephemeral domain (*.trycloudflare.com); your cph-* API keys are the only defense</string>
