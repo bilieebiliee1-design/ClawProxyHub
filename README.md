@@ -1,14 +1,12 @@
-# NexPort — 安卓端统一 AI 网关（核心仓库）
-
-> **README 双变体说明（勿互相覆盖）**：本文件是开发工作树的构建/改造要点短版；
-> [mobile-port 分支 README](https://github.com/bilieebiliee1-design/ClawProxyHub/blob/mobile-port/README.md)
-> 是面向用户的扩写版（获取安装包/系统要求/为什么插件化等），为**发布真相源**。
-> 两份内容定位不同、长期并存；同步源码分支时 README 一律在分支上单独修订，
-> 不得用本文件整文件替换（单一化合并待下轮处理）。
+# NexPort — 安卓端统一 AI 网关（mobile-port 源码分支）
 
 > **NexPort 基于 [ClawProxyHub](https://github.com/ShadowSmallBaby/ClawProxyHub)（AGPL-3.0）修改构建。**
-> 全部源码（含构建脚本）随本仓库发布；许可见根目录 `LICENSE`（AGPL-3.0）与
-> `THIRD_PARTY_NOTICES.md`。
+> 桌面端原版见上游仓库与本仓库 `main` 分支；**安卓端完整源码就在本分支（`mobile-port`）**。
+> 许可见根目录 [LICENSE](LICENSE)（AGPL-3.0 全文）与 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。
+
+NexPort 安卓版把 ClawProxyHub 的 Go 核心（网关、路由、账号、分组、密钥、任务调度、市场）
+原样搬进一部手机：应用内完成引导、启动、装插件、开临时隧道、后台保活，面板就长在
+WebView 里。当前版本 **v1.5.0（versionCode 17）**（核心随上游 v1.5.2 全量同步）。
 
 ## 系统要求与设备兼容性
 
@@ -16,36 +14,142 @@
   armeabi-v7a（32 位）产物——32 位设备安装直接报
   `INSTALL_FAILED_NO_MATCHING_ABIS`（或商店/文件管理器提示「不兼容」），属预期
   排除而非故障。2017–2019 年低端机型存在相当比例 32 位用户空间，安装前可用
-  `adb shell getprop ro.product.cpu.abilist` 确认（输出含 `arm64-v8a` 即为
-  64 位）。不做 32 位产物的取舍：28 个 native 库全量重编、构建矩阵翻倍、APK
-  再增约 150MB，收益仅为已趋淘汰的机型群，以本文档化排除替代。
-- x86_64 构建仅供模拟器/开发调试，正式渠道以 arm64-v8a 为准（APK 按 ABI 拆分：
-  arm64 专用 / x86_64 专用 / universal 兜底）。
+  `adb shell getprop ro.product.cpu.abilist` 确认（输出含 `arm64-v8a` 即为 64 位）。
+  不做 32 位产物的取舍：28 个 native 库全量重编、构建矩阵翻倍、APK 再增约
+  150MB，收益仅为已趋淘汰的机型群，以本文档化排除替代。
+- APK 按 ABI 拆分发行（v1.4.7 起）：手机用户取 **arm64-v8a 专用包**（较全量包
+  减约 162MB），不确定设备架构时用 universal 兜底包；x86_64 专用包仅供模拟器/
+  开发调试。
+
+---
+
+## 为什么已有桌面端还要做移动端
+
+说实在的，重度使用场景桌面端确实更合适——屏幕大、常开、操作方便，这个定位没有变。
+移动端解决的是另一件事：**网关随手机走，不必为一台网关常开一台电脑。**
+
+具体来说，安卓版在应用内一键完成这几件核心的事：
+
+- **核心启动**：图形化引导（免责声明 → 建管理员账号 → 启动核心 → 指南），开箱即用；
+  账号建档后自动配置引擎直接生成分组、路由和默认 API 密钥，不用从零开始点；
+- **插件安装**：面板「插件」市场照常用，安卓上 Lua 插件可直接在线装；
+- **临时隧道**：Cloudflare TryCloudflare 一键开关，出门也能把网关暴露成公网入口；
+- **保活**：前台服务 + 电池优化豁免 + 开机自启（后两项默认关，由你决定）；
+- **局域网访问**：核心额外绑定检测到的局域网 IP（绝不绑 0.0.0.0 通配），同一 WiFi 下
+  电脑、平板可以直接把 base URL 指到手机上。
+
+两端共享**同一个 Go 核心与同一套插件生态**：核心代码 fork 自上游并做了安卓化改造
+（生命周期库化、日志改道、TMPDIR 修复等，详见下文），插件契约（gRPC/protobuf）与
+上游线格式兼容——桌面上能跑的插件生态，这里基本通用。
+
+## 为什么选择插件化
+
+ClawProxyHub 的架构本来就是插件化的：核心只管网关、路由、账号这些通用的事，具体接入
+哪家服务，由插件说了算。这个选择对我们普通用户最大的意义是——**不用被动等作者更新。**
+
+传统一体化对接方式下，想接一个新站点只能等作者适配、发版，参与度很低。插件化把能力
+开放了出来：谁都可以为自家在用的站点写一个 Lua 插件（免编译、免打包二进制，写完
+打包成 `.cphplugin` 就能装）。
+
+为了把门槛再降一档，应用已在**关于页内置了 lua-plugin-dev 开发指南**（源码位于
+`app/src/main/assets/lua-dev-skill/`）：一份 `SKILL.md`、官方 autoclaw 插件完整示例、
+以及一个 hello-world 最小模板。把这份技能装进你自己的 AI agent，就能让 AI 帮你写插件——
+指南里所有 API 名称、字段、协议细节都取自真实源码，不是凭空编的。
+
+写出好用的插件，欢迎分享到 QQ 群 **1124936153**，让更多人直接用上。
 
 ## 目录
 
 ```
-gateway-mobile/
+.
 ├── core/      Go 核心库（io.nexport.gateway/core）——上游内核 fork＋安卓化改造
 │   ├── app/         生命周期：Start/Stop/Restart（替代桌面 main.run）
-│   ├── bridge 入口在 ../bridge/      ↓
 │   ├── conf/  account/  adminapi/  database/  gateway/  plugmgr/  router/
 │   ├── task/  setting/  event/  fingerprint/  janitor/  model/  runlog/
 │   ├── logsink/   日志统一出口（安卓不可依赖 stdout）
 │   ├── tunnel/    cloudflared 临时隧道（第二监听器仅 /v1 + /health）
 │   ├── sdk/       插件契约（gRPC/protobuf，与上游线格式兼容）
-│   ├── luahost/   Lua 插件宿主（独立 module，CGO 构建）
-│   ├── web/       go:embed all:dist —— 重品牌面板产物
-│   ├── cmd/nexcore/  桌面冒烟入口（安卓不经过此）
-│   └── dist/      ★ 产物：gateway-core.aar / libluahost-*.so / cloudflared-android-*
+│   ├── luahost/   Lua 插件宿主（独立 module，CGO 构建安卓 .so）
+│   ├── web/       go:embed all:dist —— 面板产物占位（dist 由 build-dashboard.sh 生成）
+│   ├── cmd/nexcore/  桌面冒烟入口
+│   └── plugmgr/luahost.bin  Lua 宿主二进制（-tags luahost_embed 桌面构建所需）
 ├── bridge/    gomobile bind 包（io.nexport.gateway/bridge）
 ├── dashboard/ 面板源码（fork 自上游 web/，品牌 NexPort；pnpm build → core/web/dist）
-├── app/       安卓壳工程（Kotlin 模块 :app；android/ 为对接说明）
+├── app/       安卓壳工程（Kotlin 模块 :app）
 ├── android/   壳工程对接说明（模块本体在 app/）
-├── tools/     构建脚本（env.sh + build-{dashboard,aar,luahost,cloudflared,android}.sh + prepare-android.sh）
+├── tools/     构建脚本（env.sh + build-{dashboard,aar,luahost,cloudflared,android,plugins}.sh
+│              + prepare-android.sh + make-source-zip.py）
+├── third_party/ClawProxyHubPlugins/  内置 Go 插件的完整对应源码（AGPL §13）
+│              （同源 .go 源码亦落在 core/plugmgr/builtin/<名>/，构建自包含）
+├── docs/      赞赏码（reward-qr.jpg）
 ├── LICENSE    AGPL-3.0 全文
 └── THIRD_PARTY_NOTICES.md
 ```
+
+构建产物（`core/dist/`、`app/build/`、`app/src/main/jniLibs/`、`app/libs/`、
+`dashboard/node_modules/` 等）不入库，全部由 `tools/` 下脚本从源码再生；签名 keystore
+与机器相关配置同样不入库。`core/web/dist/.gitkeep` 仅为 go:embed 的编译占位。
+
+## 获取与构建
+
+### 获取安装包
+
+- **安卓 APK**：本仓库 [Releases](https://github.com/bilieebiliee1-design/ClawProxyHub/releases) 页提供（当前 v1.5.0，按 ABI 拆分附 arm64-v8a 专用 / x86_64 专用 / universal 三个 APK + AAB 与 SHA256 校验和；手机用户取 arm64 专用包）；也可以按下方步骤自行构建。
+- **桌面版**：上游 [ShadowSmallBaby/ClawProxyHub](https://github.com/ShadowSmallBaby/ClawProxyHub)。
+- **源码**：安卓端完整源码即本分支 `mobile-port`；桌面端在 `main` 分支（上游内容）。
+
+### 从源码构建（Windows 主机，Git Bash 实测）
+
+前置：Go（含 gomobile/gobind）、Node + pnpm、JDK 21、Android SDK
+（platforms;android-36 + build-tools;36.0.0）、NDK r29、Gradle 9.6.1。
+**注意：`tools/env.sh` 与 `tools/build-android.sh` 内置的是作者本机的绝对路径**
+（JDK/SDK/NDK/Gradle/go 的位置），换机器请先按文件内注释改成自己的路径。
+
+```bash
+git clone -b mobile-port https://github.com/bilieebiliee1-design/ClawProxyHub.git nexport
+cd nexport
+source tools/env.sh
+tools/build-dashboard.sh     # ① pnpm 构建面板 → core/web/dist
+tools/build-aar.sh           # ② gomobile bind → core/dist/gateway-core.aar
+tools/build-luahost.sh       # ③ CGO → libluahost-android-{arm64,x64}.so
+tools/build-cloudflared.sh   # ④ cloudflared-android-{arm64,x64}
+tools/build-android.sh       # ⑤ prepare-android.sh 落位 + gradle 打包
+```
+
+产物落在 `app/build/outputs/apk/release/`（`splits.abi` 拆分：`app-arm64-v8a-release.apk`、
+`app-x86_64-release.apk`、`app-universal-release.apk`）与
+`app/build/outputs/bundle/release/app-release.aab`。签名：`keystore/`（本地文件，不入库）
+——没有它时 release 不签名、仅 debug 可构建，自备一个即可。
+
+桌面冒烟（验证核心本身，不需要安卓环境）：
+
+```bash
+go run ./cmd/nexcore   # env CPH_DATA_DIR=./data；curl 127.0.0.1:<port>/health
+```
+
+## 欢迎二改，但请依规
+
+欢迎 fork、欢迎二改，这也是 AGPL-3.0 的本意。但既然拿的是别人的开源成果，请同样依规：
+
+1. **保留 [LICENSE](LICENSE) 全文与版权声明**——不得删改、不得换协议；
+2. **保留署名**——保留对上游 [ShadowSmallBaby/ClawProxyHub](https://github.com/ShadowSmallBaby/ClawProxyHub)
+   与本仓库（bilieebiliee1-design/ClawProxyHub `mobile-port` 分支）的署名；
+3. **同样以 AGPL-3.0 开放你修改后的完整源码**——包括分发出去的版本，以及你部署起来
+   给别人用的网络服务版本（AGPL §13）；
+4. **应用内「关于页」的署名不可移除**——UPSTREAM_NAME / UPSTREAM_URL 与 fork 源码链接
+   是构建常量，关于页固定展示；
+5. 如果这个项目对你有帮助，顺手给 [本仓库](https://github.com/bilieebiliee1-design/ClawProxyHub)
+   和 [上游仓库](https://github.com/ShadowSmallBaby/ClawProxyHub) 点个 Star，是给作者最实在的鼓励。
+
+## 赞赏
+
+如果 NexPort 帮到了你，可以请作者喝杯咖啡：
+
+![赞赏码](docs/reward-qr.jpg)
+
+赞赏是为了获得更多持续维护的动力——如果收获足够的鼓励，就可以一直为爱发电。赞赏后可
+进群（QQ 1124936153）联系作者进入 **VIP 会员群**：相关反馈会优先满足、获得持久的技术
+支持。当然，不赞赏也完全可以正常使用全部功能，提 issue 一样欢迎。
 
 ## 核心与桌面版的差异（移植改造点）
 
@@ -63,36 +167,33 @@ gateway-mobile/
    （`NXPORT-KEY-ENVELOPE v1` 头）兼容；信封缺注入时快速失败，绝不静默重生成。
 6. **插件安卓分支**：lua 经 `nativeLibraryDir/libluahost.so --dir <插件目录>` 启动
    （不写 data/hosts）；Go 插件回查 `nativeLibraryDir/libplugin_<name>.so`（仅 APK
-   预打包）；市场安装仅放行 runtime=lua 包，Go 包明确拒绝。
+   预打包）；市场安装仅放行 runtime=lua 包，Go 包明确拒绝（内置 Go 插件除外，
+   二进制随 APK 经 nativeLibraryDir 提供）。
 7. **服务端密码策略加强**：/admin/setup 要求 ≥10 位含大小写与数字（原生引导同规）。
-8. **版本位**：`core/version/version.go` 单一事实源——`version.Core`（语义保留，随上游
-   对齐，当前 1.2.9）+ `version.Mobile`（随 APK versionName/versionCode 同步，当前
-   1.4.11 / versionCode 16）。
+8. **版本位**：`version.Core`（1.2.9，本地修订线；上游语义已随 v1.5.2 全量同步：SDK/协议契约、三协议转换、凭据与授权一致性、luahost 硬化、调度时区）+ `version.Mobile`（1.5.0，随 APK versionName/versionCode 同步）。
 
-## 构建（Windows 主机，Git Bash）
+## v1.5.0 更新内容（2026-10-05）
 
-```bash
-source tools/env.sh
-tools/build-dashboard.sh     # 面板：pnpm install+build → core/web/dist
-tools/build-aar.sh           # gomobile bind → core/dist/gateway-core.aar
-tools/build-luahost.sh       # CGO → libluahost-android-{arm64,x64}.so
-tools/build-cloudflared.sh   # CGO → cloudflared-android-{arm64,x64}
-tools/build-android.sh       # 安卓壳：prepare-android.sh + release APK/AAB
-```
+- **上游 v1.5.2 全量同步**：核心 97b3b68..0ddc177 恰 10 个提交 + 插件仓 0f52234..1051ce2
+  30 个提交。SDK/协议底座（sdk.ReadSSE、streamutil/requestutil、cph.proto 图片
+  detail/引用注解/拒绝结构新字段、日志脱敏硬化、32MiB 响应上限）、三协议转换与
+  流式恢复、luahost 硬化（RPC 取消贯通 + 凭据代理出站 + VM 资源上限）、凭据与授权
+  一致性大版本（凭据账号锁、加解密错误传播、代理密码加密、登录限流、调度时区默认
+  Asia/Shanghai 内嵌 tzdata、SQLite 迁移 000015/000016、备份恢复校验、插件安装
+  校验+失败回滚）。
+- **内置插件 25 → 27**：26 个更新批次全量收编，并新增内置 **Devin 0.1.0** 与
+  **Warp 0.1.0**——市场上两者此前标「安卓端暂不支持」，随本轮内置登记徽章自动
+  消失，可直接添加账号使用。
+- **豆包 401 修复延续**（0.1.3）：上游 0.1.2 基座上保留本地三偏离（凭据 Cookies
+  全量外发 Cookie 头 + sessionid 建档预检 + msToken 三级兜底，PR #1 未被上游合并前
+  持续自带），并新增凭据外发 httptest 回归（never-sent 防复发）。
+- **账号生命周期审计日志**：建档 / 凭据轮换 / 删除 / 列表构成变更落 run-logs
+  （凭据指纹不含明文），为账号消失类异常留存时间线。
+- **升级体验修复**：应用升级后首次打开面板自动清 WebView HTTP 缓存，根治 WebView
+  缓存旧 index.html 致面板导航静默失效（v1.4.10 发现）。
 
-核心产物落在 `core/dist/`；安卓壳产物落在
-`app/build/outputs/apk/release/app-release.apk` 与
-`app/build/outputs/bundle/release/app-release.aab`（签名 keystore/ 与其 properties
-见 `android/README.md`）。对接要点（jniLibs useLegacyPackaging、FGS、WebView 两桥、
-Keystore 信封）见 `android/README.md`。
-
-## 冒烟（桌面）
-
-```bash
-go run ./cmd/nexcore   # env CPH_DATA_DIR=./data；curl 127.0.0.1:<port>/health
-```
-
-## v1.3.0 核心侧改造（NexPort fork 本地修订）
+<details>
+<summary><strong>附：v1.3.0 核心侧改造记录（本地修订，展开阅读）</strong></summary>
 
 > 以下五块均带单元/端到端回归（`core/app`、`core/adminapi`、`core/task`、`core/plugmgr`）。
 
@@ -163,3 +264,13 @@ go run ./cmd/nexcore   # env CPH_DATA_DIR=./data；curl 127.0.0.1:<port>/health
 2. **存量兜底**：任务执行历史（task_runs started_at/finished_at）与规则
    next_run_at/last_run_at 返回前统一 `In(Local)` 规范化——不改时刻、只换标注，
    面板按 RFC3339 截串展示（`Tasks.vue` slice(0,19)）即为本机时间。
+
+</details>
+
+## 许可证
+
+本项目基于 [AGPL-3.0](LICENSE) 协议开源：
+
+- 上游项目：[ShadowSmallBaby/ClawProxyHub](https://github.com/ShadowSmallBaby/ClawProxyHub)
+- 本安卓移植（NexPort）：[bilieebiliee1-design/ClawProxyHub](https://github.com/bilieebiliee1-design/ClawProxyHub)（`mobile-port` 分支）
+- 第三方组件许可登记见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
