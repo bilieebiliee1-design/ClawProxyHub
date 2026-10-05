@@ -3,6 +3,13 @@
 // 登录：Cookie 导入（Cookie 头或 .doubao_session.json），无原生 token 刷新。
 // 多模态对话 + 深度思考（ReasoningDelta）+ 联网搜索（tool_info 以文本透出）；
 // 工具调用经提示词注入 + <tool_call> 标签解析模拟（见 envelope.go）。
+//
+// 【NexPort 本地偏离（v1.4.11 缺陷② 401 修复，登记于 tools/build-plugins.sh 头注）】
+// 相对上游 0f52234 底源（其 doubao v0.1.2=0dcbbff 亦同病）两处：① loginCookieHeader
+// 建档前预检会话 Cookie（sessionid/sessionid_ss any-of，缺失 400 拒建档——登录前匿名
+// Cookie 解析通过却必死档）；② finalizeLogin 的 msToken 兜底先取凭据 Cookies 内
+// msToken 再落全局设置（抓包实证出站 msToken 缺省是风控 710022002/710022004 已知
+// 诱因）。Cookie 头外发在 upstream.go（见该文件头注）。重同步上游时三处必须保留。
 package main
 
 import (
@@ -126,10 +133,19 @@ func (p *plugin) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResu
 }
 
 // loginCookieHeader 解析浏览器复制的 Cookie 头字符串。
+// 【NexPort 本地偏离·v1.4.11 缺陷②】建档前预检会话 Cookie：sessionid/sessionid_ss
+// 任一存在即放行（any-of，保守不误杀；具体哪个必现待真机登录验证）。登录前的匿名
+// Cookie（ttwid/msToken/passport_csrf_token 等十余条）解析通过却必然 401——上游
+// 仅要求 ≥1 个键值对即建档，坏档静默入库，面板手动粘贴路径同被此预检堵住。
 func (p *plugin) loginCookieHeader(req *pb.LoginRequest) (*pb.LoginResult, error) {
 	cookies := parseCookieHeader(req.Form["cookie"])
 	if len(cookies) == 0 {
 		return &pb.LoginResult{Error: &pb.Error{Code: 400, Message: "Cookie 头解析失败，需含 sessionid 等"}}, nil
+	}
+	if cookies["sessionid"] == "" && cookies["sessionid_ss"] == "" {
+		return &pb.LoginResult{Error: &pb.Error{Code: 400, Message:
+			"Cookie 缺少 sessionid/sessionid_ss（未登录）：请先在浏览器完成登录再复制，" +
+				"应形如 sessionid=...; ttwid=...; passport_csrf_token=..."}}, nil
 	}
 	return p.finalizeLogin(&credential{Label: "doubao-cookie", Cookies: cookies})
 }
@@ -159,10 +175,16 @@ func (p *plugin) loginSessionJSON(req *pb.LoginRequest) (*pb.LoginResult, error)
 	})
 }
 
-// finalizeLogin 补全局 msToken 兜底 → 建档。
+// finalizeLogin 补 msToken 兜底 → 建档。
+// 【NexPort 本地偏离·v1.4.11 缺陷②】三级取值：凭据参数自带 > 凭据 Cookies 内
+// msToken（浏览器捕获面自然含该键，此前被丢弃致出站缺省）> 插件设置全局兜底。
 func (p *plugin) finalizeLogin(c *credential) (*pb.LoginResult, error) {
 	if c.MsToken == "" {
-		c.MsToken = strings.TrimSpace(p.settingStr("ms_token"))
+		if v := c.Cookies["msToken"]; v != "" {
+			c.MsToken = v
+		} else {
+			c.MsToken = strings.TrimSpace(p.settingStr("ms_token"))
+		}
 	}
 	blob, _ := json.Marshal(c)
 	return &pb.LoginResult{

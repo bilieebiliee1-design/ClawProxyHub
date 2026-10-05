@@ -27,6 +27,8 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.progressindicator.LinearProgressIndicator
 
@@ -63,13 +65,20 @@ import com.google.android.material.progressindicator.LinearProgressIndicator
  * 403 disallowed_useragent），登录无法在本 WebView 内完成——用户应改用面板向导
  * 手动粘贴；助手不隐藏该失败，提取不到凭据时给出明确状态而非假装成功。
  *
+ * v1.4.11：① onCreate 后套根布局 insets 监听（Android 15 强制 edge-to-edge，顶栏
+ * 侵入状态栏修复，MainActivity.kt 同款）；② Recipe.requiredCookieKeys 会话 Cookie
+ * 预检（doubao=[sessionid, sessionid_ss] any-of、loomy=[loomy_web_session]），缺失
+ * 按未登录拒绝预填——插件侧 doubao loginCookieHeader 同尺校验（双重防线）。
+ *
  * 基于 ClawProxyHub（AGPL-3.0）修改构建。
  */
 class BrowserLoginActivity : BaseActivity() {
 
     // ---- 配方表（app 层映射：插件 → 登录 URL + 目标域 + method_id + 预填字段名） ----
 
-    /** storageHosts 非空 = 额外做 localStorage JWT 扫描（puter 型 site-token 试点）。 */
+    /** storageHosts 非空 = 额外做 localStorage JWT 扫描（puter 型 site-token 试点）。
+     *  requiredCookieKeys 非空 = 提取的 Cookie 头必须含至少一键（any-of）才预填，
+     *  缺失按未登录拒绝（v1.4.11 缺陷②：doubao 登录前匿名 Cookie 建档必 401）。 */
     private data class Recipe(
         val plugin: String,
         val labelZh: String,
@@ -78,15 +87,22 @@ class BrowserLoginActivity : BaseActivity() {
         val cookieUrls: List<String>,
         val cookieField: String,
         val storageHosts: List<String> = emptyList(),
+        val requiredCookieKeys: List<String> = emptyList(),
     )
 
     companion object {
         /** 支持浏览器辅助登录的插件配方（插件名以 /admin/plugins 的 name 为准）。 */
         private val RECIPES = listOf(
+            // requiredCookieKeys（v1.4.11 缺陷②）：doubao 会话键 sessionid/sessionid_ss
+            //（any-of，具体哪个必现待真机登录验证，存疑标注）；loomy 关键键
+            // loomy_web_session（loomy/account.go:20）。其余配方关键 cookie 名未经
+            // 确认且插件侧已自带登录校验，本轮不加。
             Recipe("doubao", "豆包", "cookie_header", "https://www.doubao.com/",
-                listOf("https://www.doubao.com"), "cookie"),
+                listOf("https://www.doubao.com"), "cookie",
+                requiredCookieKeys = listOf("sessionid", "sessionid_ss")),
             Recipe("loomy", "Loomy", "cookie_header", "https://loomy.xunfei.cn/",
-                listOf("https://loomy.xunfei.cn"), "cookie"),
+                listOf("https://loomy.xunfei.cn"), "cookie",
+                requiredCookieKeys = listOf("loomy_web_session")),
             Recipe("postman", "Postman", "cookie", "https://go.postman.co/login",
                 listOf("https://go.postman.co", "https://postman.co"), "cookie"),
             Recipe("improvado", "Improvado", "cookie", "https://report.improvado.io/",
@@ -193,6 +209,23 @@ class BrowserLoginActivity : BaseActivity() {
         })
 
         setContentView(root)
+
+        // 状态栏 insets 修复（v1.4.11 缺陷①）：targetSdk 35 → Android 15 强制
+        // edge-to-edge，themes.xml 的 android:statusBarColor 在 API 35+ 被忽略，本页
+        // 全代码化 UI 无 insets 处理 → 顶栏伸进状态栏。套 MainActivity.kt 同款单点
+        // 监听于根 LinearLayout：top=max(状态栏, 刘海)、bottom=max(导航条, 键盘)（合并
+        // type 的 getInsets 返回并集 max，adjustResize 下输入框不被键盘遮挡），CONSUMED
+        // 阻止向子视图二次分发。双 regime 无版本分支：API 26-34 框架默认
+        // decorFitsSystemWindows=true，root 收到的 systemBars insets 已被框架消费
+        // （padding=0），无双重内缩。
+        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+            val t = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or
+                    WindowInsetsCompat.Type.displayCutout() or
+                    WindowInsetsCompat.Type.ime())
+            v.setPadding(0, t.top, 0, t.bottom)
+            WindowInsetsCompat.CONSUMED
+        }
 
         attachWebView(webViewHost)
 
@@ -324,11 +357,30 @@ class BrowserLoginActivity : BaseActivity() {
         extractBtn.isEnabled = false
         statusView.text = getString(R.string.browser_login_extracting)
         val cookieHeader = pickCookie(r)
+        // v1.4.11 缺陷②：会话 Cookie 预检——配方要求的关键键缺失（登录态未落 Cookie，
+        // 如 doubao 登录前仅 ttwid/msToken 等匿名项）时按未登录处理，拒绝预填必死档
+        // （复用 browser_login_no_cookie 状态通道，插件侧 loginCookieHeader 同尺预检）。
+        if (missingRequiredCookies(r, cookieHeader)) {
+            doneExtracting()
+            statusView.text = getString(R.string.browser_login_no_cookie)
+            return
+        }
         if (r.storageHosts.isNotEmpty()) {
             scanStorage(r) { token -> proceed(r, cookieHeader, token) }
         } else {
             proceed(r, cookieHeader, null)
         }
+    }
+
+    /** 配方声明 requiredCookieKeys 时，提取头须含至少一键（any-of）才算已登录。 */
+    private fun missingRequiredCookies(r: Recipe, cookieHeader: String?): Boolean {
+        if (r.requiredCookieKeys.isEmpty()) return false
+        if (cookieHeader.isNullOrEmpty()) return true
+        val keys = cookieHeader.split(';')
+            .map { it.trim().substringBefore('=') }
+            .filter { it.isNotEmpty() }
+            .toSet()
+        return r.requiredCookieKeys.none { it in keys }
     }
 
     private fun proceed(r: Recipe, cookieHeader: String?, storageToken: String?) {

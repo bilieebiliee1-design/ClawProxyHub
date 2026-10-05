@@ -13,8 +13,14 @@
 # mimo/notion/postman/puter/qoder 11 个此前未上 index 的项已全部发布 + codearts/
 # loomy/raccoon/trae 4 个新插件；另有 Lua autoclaw 0.1.1，动态安装不受 noexec 限制，
 # 不内置）。版本取各插件 manifest.json（builtin 源码与二进制同源同版本，市场比对
-# 逻辑见 adminapi/marketplace.go）。唯一源码偏离：zcode/main.go 内嵌 system_prompt.json
-# （安卓 nativeLibraryDir 只读，磁盘读取必失败，v1.4.3 热修，见该文件头注）。
+# 逻辑见 adminapi/marketplace.go）。源码偏离（新增偏离必须同步本注，重同步上游
+# builtin/ 时逐项保留，否则静默回退）：
+#   1) zcode/main.go 内嵌 system_prompt.json（安卓 nativeLibraryDir 只读，磁盘读取
+#      必失败，v1.4.3 热修，见该文件头注）；
+#   2) doubao 本地 401 修复（v1.4.11 缺陷②，上游 0f52234 及其 doubao v0.1.2=0dcbbff
+#      均未修）：upstream.go 凭据 Cookies 全量外发 Cookie 头（cookieHeader()）+
+#      main.go loginCookieHeader sessionid/sessionid_ss 预检 + finalizeLogin msToken
+#      先取凭据 Cookies 再落全局设置，见该两文件头注。
 #
 # 产出（双布局，字节同源）：
 #   A. jniLibs 规范（prepare-android.sh 消费口径，ABI 段为 GOARCH 口径）：

@@ -1,4 +1,12 @@
 // doubao 上游协议：/chat/completion 请求构建 + SSE 流解析（照 doubao2api client.py）。
+//
+// 【NexPort 本地偏离（v1.4.11 缺陷② 401 修复，登记于 tools/build-plugins.sh 头注）】
+// 本文件相对上游 ClawProxyHubPlugins（0f52234 底源；其 doubao v0.1.2=0dcbbff 亦同病）
+// 新增 chatCompletion 外发凭据 Cookie 头（cookieHeader()）：上游仅 csrfToken() 消费
+// Cookies 一键、从不外发 Cookie 头，登录态鉴权完全缺失 → 建档即 401「会话已过期」。
+// 重同步上游 builtin/doubao 时必须保留本偏离（对照本注）；已反哺上游：
+// ShadowSmallBaby/ClawProxyHubPlugins PR #1（fix/doubao-cookie-auth，基于其
+// main=1051ce2 / doubao v0.1.2 底源适配，manifest 随修升 0.1.3）。
 package main
 
 import (
@@ -12,6 +20,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"sync"
 
@@ -171,6 +180,9 @@ func (p *plugin) chatCompletion(cred *credential, req *pb.ChatRequest, model str
 	httpReq.Header.Set("Referer", upstreamURL+"/chat")
 	httpReq.Header.Set("User-Agent", p.userAgentStr())
 	httpReq.Header.Set("x-tt-passport-csrf-token", csrfToken(cred))
+	// 【NexPort 本地偏离·v1.4.11 缺陷②】凭据 Cookies 全量外发为 Cookie 头——登录态
+	// 鉴权依据（上游插件从不外发，诊断轮抓包实证出站请求无 Cookie 头 → 401）。
+	httpReq.Header.Set("Cookie", cookieHeader(cred))
 
 	resp, err := p.hc(cred).Do(httpReq)
 	if err != nil {
@@ -279,6 +291,21 @@ func csrfToken(c *credential) string {
 		return v
 	}
 	return c.Cookies["passport_csrf_token_default"]
+}
+
+// cookieHeader 组装凭据 Cookies 全量 "k=v; k2=v2" Cookie 头（键序固定保证可复现）。
+// 【NexPort 本地偏离·v1.4.11 缺陷②】登录态鉴权完全依赖此头；上游 0dcbbff 仍无外发。
+func cookieHeader(c *credential) string {
+	keys := make([]string, 0, len(c.Cookies))
+	for k := range c.Cookies {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	parts := make([]string, 0, len(keys))
+	for _, k := range keys {
+		parts = append(parts, k+"="+c.Cookies[k])
+	}
+	return strings.Join(parts, "; ")
 }
 
 // errAuth 会话失效类错误（core 侧提示重新登录）。

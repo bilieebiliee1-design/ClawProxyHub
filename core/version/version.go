@@ -118,7 +118,15 @@ var Core = "1.2.9"
 // 『正在启动插件…』加载态；③首页供应商点击拦截实为 ② 的深链门槛（HomeFragment
 // 本就渲染全部已安装插件，无运行状态过滤）。AAR 随核心 adminapi 改动与 Mobile
 // 位重编，面板 dist 重嵌入（版本链六处一致口径）。
-var Mobile = "1.4.10"
+// 1.4.11（2026-10-05）：随 APK v1.4.11（versionCode 16）同步——缺陷轮：
+// ①浏览器登录助手状态栏 insets 修复（BrowserLoginActivity 根布局套 MainActivity
+// 同款监听，Android 15 强制 edge-to-edge 致顶栏侵入状态栏）；②豆包 401 本地修复
+// （builtin/doubao 凭据 Cookies 全量外发 Cookie 头 + loginCookieHeader 的
+// sessionid/sessionid_ss 建档预检 + finalizeLogin msToken 先取 Cookies 再落全局
+// 设置；助手侧 Recipe.requiredCookieKeys 预检 doubao/loomy；本地偏离登记于
+// tools/build-plugins.sh 头注，上游同步轮换 0dcbbff 底时必须保留）。AAR 随
+// Mobile 位重编、25 插件 so 重编（doubao 本地修复版仍标 v0.1.1）；Core 位不变。
+var Mobile = "1.4.11"
 
 // String 完整版本串："mobile (core x)" 形态，供 bridge.Version() 与关于页展示。
 func String() string { return Mobile + " (core " + Core + ")" }
