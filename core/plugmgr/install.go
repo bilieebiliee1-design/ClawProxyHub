@@ -1,5 +1,7 @@
 // install.go — .cphplugin 包的安装与卸载。
 // 包格式（zip）：manifest.json + plugin-<os>-<arch>[.exe] 二进制（可多平台）。
+// 随上游 v1.5.2 f49335e 重构：条目级校验（路径穿越/符号链接/重复条目/体积上限）、
+// 暂存目录 + 失败回滚（旧目录备份、启动失败自动恢复）。
 //
 // 安卓分支（NexPort fork，插件安卓化方案 ①）：应用数据目录 noexec（targetSdk 29+），
 // Go 插件二进制一律以 APK 内置的 libplugin_<name>.so 运行（见 builtin.go）——
@@ -15,10 +17,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"io.nexport.gateway/core/logsink"
 	"io.nexport.gateway/core/sdk"
@@ -83,100 +87,112 @@ const (
 // namespace 为来源命名空间（官方源/手动上传为空 → <dir>/<name>；其他源 → <dir>/<namespace>/<name>）。
 // 返回插件名。同名同命名空间时覆盖安装（升级）；同名插件已装在其他命名空间时拒绝。
 // onPhase 非 nil 时在各阶段开始前回调（前端进度展示）。
-func (m *Manager) InstallZip(ctx context.Context, zipPath, namespace string, onPhase func(phase string)) (string, error) {
+func (m *Manager) InstallZip(ctx context.Context, zipPath, namespace string, onPhase func(string)) (string, error) {
+	m.installMu.Lock()
+	defer m.installMu.Unlock()
 	report := func(phase string) {
 		if onPhase != nil {
 			onPhase(phase)
 		}
 	}
 	if namespace != "" && !validPluginName(namespace) {
-		return "", fmt.Errorf("invalid source namespace")
+		return "", fmt.Errorf("invalid namespace")
 	}
 	zr, err := zip.OpenReader(zipPath)
 	if err != nil {
-		return "", fmt.Errorf("open package: %w", err)
+		return "", err
 	}
 	defer zr.Close()
-
-	// 1. 读 manifest 与平台二进制
-	var manifest *PackageManifest
-	var binFile *zip.File
-	platformBin := fmt.Sprintf("plugin-%s-%s", runtime.GOOS, runtime.GOARCH)
+	entries := make(map[string]*zip.File)
+	var total uint64
 	for _, f := range zr.File {
-		name := filepath.Base(f.Name)
-		switch {
-		case name == "manifest.json":
-			rc, err := f.Open()
-			if err != nil {
-				return "", err
-			}
-			manifest = &PackageManifest{}
-			err = json.NewDecoder(rc).Decode(manifest)
-			rc.Close()
-			if err != nil {
-				return "", fmt.Errorf("invalid manifest.json: %w", err)
-			}
-		case name == platformBin || (runtime.GOOS == "windows" && name == platformBin+".exe"):
-			binFile = f
+		name := f.Name
+		if f.FileInfo().IsDir() {
+			name = strings.TrimSuffix(name, "/")
 		}
+		if !fs.ValidPath(name) || strings.Contains(name, "\\") || f.Mode()&os.ModeSymlink != 0 {
+			return "", fmt.Errorf("unsafe archive path %q", name)
+		}
+		if f.FileInfo().IsDir() {
+			continue // ZIP 目录条目不解压，文件写入时创建父目录。
+		}
+		if _, exists := entries[name]; exists {
+			return "", fmt.Errorf("duplicate archive path %q", name)
+		}
+		if f.UncompressedSize64 > 512<<20 || total > (512<<20)-f.UncompressedSize64 {
+			return "", fmt.Errorf("package exceeds extraction limit")
+		}
+		total += f.UncompressedSize64
+		entries[name] = f
 	}
-	if manifest == nil {
-		return "", fmt.Errorf("package missing manifest.json")
+	mf := entries["manifest.json"]
+	if mf == nil || mf.UncompressedSize64 > 1<<20 {
+		return "", fmt.Errorf("missing or oversized manifest")
 	}
-	if manifest.Name == "" {
-		return "", fmt.Errorf("manifest missing name")
+	rc, err := mf.Open()
+	if err != nil {
+		return "", err
 	}
-	// lua 脚本插件：包内无二进制，由核心用内置/共享 luahost 启动（P1：共享于 data/hosts）。
-	// Go 插件：桌面/容器要求包内自带当前平台二进制；安卓一律映射到 APK 内置二进制
-	// （数据目录 noexec，包内二进制落盘不可执行），未内置的给出可读原因拒绝。
+	var manifest PackageManifest
+	err = json.NewDecoder(io.LimitReader(rc, 1<<20)).Decode(&manifest)
+	rc.Close()
+	if err != nil || !validPluginName(manifest.Name) {
+		return "", fmt.Errorf("invalid manifest name")
+	}
+	if manifest.Runtime != "" && manifest.Runtime != "go" && manifest.Runtime != "lua" {
+		return "", fmt.Errorf("unsupported runtime")
+	}
+	if pv := manifest.ProtocolVersion; pv != 0 && (pv < sdk.MinProtocolVersion || pv > sdk.ProtocolVersion) {
+		return "", fmt.Errorf("unsupported protocol %d", pv)
+	}
+	if manifest.Runtime == "lua" && m.host.settings != nil && m.db != nil && !m.host.settings.LuaEnabled() {
+		return "", fmt.Errorf("Lua runtime is disabled")
+	}
+	// 安卓：Go 插件一律映射到 APK 内置二进制（数据目录 noexec，包内二进制落盘不可执行），
+	// 未内置的给出可读原因拒绝；重装清除卸载墓碑；版本差异以内置二进制为准并记日志。
 	var builtinMismatch string // 安卓内置映射下：安装包版本 vs 内置二进制版本差异说明（空 = 一致）
-	if manifest.Runtime == "lua" {
-		if len(luahostBin) == 0 {
-			if _, err := os.Stat(m.luahostFile()); err != nil {
-				return "", fmt.Errorf("核心未内置 luahost（请以 -tags luahost_embed 构建）或先上传 luahost，无法安装 lua 插件 %q", manifest.Name)
-			}
-		}
-	} else if runtime.GOOS == "android" {
+	if manifest.Runtime != "lua" && runtime.GOOS == "android" {
 		if err := m.builtinInstallCheck(manifest.Name); err != nil {
 			return "", err
 		}
 		// 重装清除卸载墓碑：此后 EnsureBuiltinPlugins 恢复该插件的落盘维护
 		m.clearBuiltinUninstalled(manifest.Name)
 		builtinMismatch = builtinVersionMismatch(manifest.Name, manifest.Version)
-	} else if binFile == nil {
-		return "", fmt.Errorf("package missing binary for %s/%s", runtime.GOOS, runtime.GOARCH)
 	}
-	if pv := manifest.ProtocolVersion; pv != 0 && (pv < sdk.MinProtocolVersion || pv > sdk.ProtocolVersion) {
-		return "", fmt.Errorf("protocol version %d unsupported (core accepts %d..%d)", pv, sdk.MinProtocolVersion, sdk.ProtocolVersion)
-	}
-
-	// 2. 同名冲突：已装在其他命名空间的同名插件拒绝（插件身份 = manifest.name，全局唯一）
-	target := filepath.Join(m.dir, namespace, manifest.Name)
-	if existing, ok := m.pluginDir(manifest.Name); ok && existing != target {
-		return "", fmt.Errorf("同名插件 %q 已从其他来源安装（%s），请先卸载", manifest.Name, filepath.Base(filepath.Dir(existing)))
-	}
-
-	// 3. 升级场景：先停旧进程（仅停本次进程，升级后照常拉起）
-	if _, running := m.Get(manifest.Name); running {
-		report(PhaseStopping)
-		m.Stop(manifest.Name, false)
-	}
-	report(PhaseInstalling)
-
-	// 4. 解压到目标目录（清掉旧目录）
-	if err := os.RemoveAll(target); err != nil {
-		return "", fmt.Errorf("clean old install: %w", err)
-	}
-	if err := os.MkdirAll(target, 0o755); err != nil {
+	target, err := installTarget(m.dir, namespace, manifest.Name)
+	if err != nil {
 		return "", err
 	}
-	// lua：不再逐插件拷 luahost（P1 改用 data/hosts 共享二进制），仅解出脚本；Go：解出包内平台二进制。
+	if existing, ok := m.pluginDir(manifest.Name); ok {
+		existing, _ = filepath.EvalSymlinks(existing)
+		existing, _ = filepath.Abs(existing)
+		if existing != target {
+			return "", fmt.Errorf("plugin already installed from another source")
+		}
+	}
+	report(PhaseInstalling)
+	stage, err := os.MkdirTemp(filepath.Dir(target), ".install-"+manifest.Name+"-")
+	if err != nil {
+		return "", err
+	}
+	defer os.RemoveAll(stage)
 	if manifest.Runtime == "lua" {
-		if _, err := m.ensureLuahost(); err != nil {
+		if entries["main.lua"] == nil {
+			return "", fmt.Errorf("missing main.lua")
+		}
+		if _, err = m.ensureLuahost(); err != nil {
 			return "", err
 		}
-		if err := extractLuaScripts(zr, target); err != nil {
-			return "", fmt.Errorf("extract scripts: %w", err)
+		for name, f := range entries {
+			if strings.HasSuffix(name, ".lua") {
+				dst := filepath.Join(stage, filepath.FromSlash(name))
+				if err = os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+					return "", err
+				}
+				if err = extractTo(f, dst); err != nil {
+					return "", err
+				}
+			}
 		}
 	} else if runtime.GOOS == "android" {
 		// 安卓内置映射：包内二进制一律忽略（落盘不可执行）——启动时由 pluginBinary
@@ -187,34 +203,117 @@ func (m *Manager) InstallZip(ctx context.Context, zipPath, namespace string, onP
 			m.runLogger().Warn("plugin", "install", builtinMismatch, "", nil)
 		}
 	} else {
-		binPath := filepath.Join(target, platformBin)
+		bin := fmt.Sprintf("plugin-%s-%s", runtime.GOOS, runtime.GOARCH)
 		if runtime.GOOS == "windows" {
-			binPath += ".exe"
+			bin += ".exe"
 		}
-		if err := extractTo(binFile, binPath); err != nil {
-			return "", fmt.Errorf("extract binary: %w", err)
+		f := entries[bin]
+		if f == nil {
+			return "", fmt.Errorf("missing binary for %s", bin)
 		}
-		if runtime.GOOS != "windows" {
-			os.Chmod(binPath, 0o755)
+		if err = extractTo(f, filepath.Join(stage, bin)); err != nil {
+			return "", err
+		}
+		if err = os.Chmod(filepath.Join(stage, bin), 0755); err != nil {
+			return "", err
 		}
 	}
-	// manifest 一并落盘（卸载/诊断用）
-	if mf := zipEntry(zr, "manifest.json"); mf != nil {
-		_ = extractTo(mf, filepath.Join(target, "manifest.json"))
+	if err = extractTo(mf, filepath.Join(stage, "manifest.json")); err != nil {
+		return "", err
 	}
-	// icon（包内 manifest.icon 声明）一并解出
 	if manifest.Icon != "" {
-		if ic := zipEntry(zr, filepath.Base(manifest.Icon)); ic != nil {
-			_ = extractTo(ic, filepath.Join(target, filepath.Base(manifest.Icon)))
+		if !fs.ValidPath(manifest.Icon) || strings.Contains(manifest.Icon, "\\") {
+			return "", fmt.Errorf("invalid icon path")
+		}
+		if f := entries[manifest.Icon]; f != nil {
+			if err = extractTo(f, filepath.Join(stage, filepath.Base(manifest.Icon))); err != nil {
+				return "", err
+			}
 		}
 	}
-
-	// 5. 启动（Start 由插件目录解析启动命令）
+	if err = ctx.Err(); err != nil {
+		return "", err
+	}
+	_, running := m.Get(manifest.Name)
+	if running {
+		report(PhaseStopping)
+		m.Stop(manifest.Name, false)
+	}
+	backup := stage + "-previous"
+	hadOld := false
+	if _, err = os.Lstat(target); err == nil {
+		if err = os.Rename(target, backup); err != nil {
+			return "", err
+		}
+		hadOld = true
+	} else if !os.IsNotExist(err) {
+		return "", err
+	}
+	rollback := func(cause error) (string, error) {
+		if err := removeWithRetry(target); err != nil {
+			return "", fmt.Errorf("%w; rollback cleanup: %v (backup %s)", cause, err, backup)
+		}
+		if hadOld {
+			if err := os.Rename(backup, target); err != nil {
+				return "", fmt.Errorf("%w; rollback: %v (backup %s)", cause, err, backup)
+			}
+		}
+		if running && hadOld {
+			recovery, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+			defer cancel()
+			if _, err := m.Start(recovery, target); err != nil {
+				return "", fmt.Errorf("%w; previous plugin restart: %v", cause, err)
+			}
+		}
+		return "", cause
+	}
+	if err = os.Rename(stage, target); err != nil {
+		return rollback(err)
+	}
 	report(PhaseStarting)
-	if _, err := m.Start(ctx, target); err != nil {
-		return manifest.Name, fmt.Errorf("installed but failed to start: %w", err)
+	if _, err = m.Start(ctx, target); err != nil {
+		return rollback(err)
+	}
+	if hadOld {
+		if err = removeWithRetry(backup); err != nil {
+			return manifest.Name, fmt.Errorf("installed; old backup cleanup: %w", err)
+		}
 	}
 	return manifest.Name, nil
+}
+
+// installTarget 在任何替换操作前验证命名空间和真实父路径，禁止符号链接越界。
+func installTarget(root, namespace, name string) (string, error) {
+	if !validPluginName(name) || (namespace != "" && !validPluginName(namespace)) {
+		return "", fmt.Errorf("invalid install name")
+	}
+	if err := os.MkdirAll(root, 0755); err != nil {
+		return "", err
+	}
+	root, err := filepath.EvalSymlinks(root)
+	if err != nil {
+		return "", err
+	}
+	root, err = filepath.Abs(root)
+	if err != nil {
+		return "", err
+	}
+	parent := filepath.Join(root, namespace)
+	if err = os.MkdirAll(parent, 0755); err != nil {
+		return "", err
+	}
+	resolved, err := filepath.EvalSymlinks(parent)
+	if err != nil {
+		return "", err
+	}
+	if resolved != parent {
+		return "", fmt.Errorf("namespace may not be a symbolic link")
+	}
+	target := filepath.Join(parent, name)
+	if st, err := os.Lstat(target); err == nil && st.Mode()&os.ModeSymlink != 0 {
+		return "", fmt.Errorf("target may not be a symbolic link")
+	}
+	return target, nil
 }
 
 // Uninstall 停止并删除一个插件的全部本地文件（根目录或命名空间目录；仅停进程，插件记录随级联删除清库）。
@@ -231,13 +330,26 @@ func (m *Manager) Uninstall(name string) error {
 	if !ok {
 		return nil
 	}
-	if err := os.RemoveAll(dir); err != nil {
+	if err := removeWithRetry(dir); err != nil {
 		return err
 	}
 	if BuiltinVersion(name) != "" {
 		m.markBuiltinUninstalled(name)
 	}
 	return nil
+}
+
+// removeWithRetry 带重试删除：Windows 下进程退出到文件锁释放有延迟（Access is denied），
+// 退避重试几轮再报错（安卓亦用于覆盖 install 目录残句柄）。
+func removeWithRetry(dir string) error {
+	var err error
+	for i := 0; i < 5; i++ {
+		if err = os.RemoveAll(dir); err == nil {
+			return nil
+		}
+		time.Sleep(time.Duration(200*(i+1)) * time.Millisecond)
+	}
+	return err
 }
 
 // pluginDir 按插件名定位落盘目录：先 <dir>/<name>，再 <dir>/<source>/<name>（命名空间安装）。
@@ -303,36 +415,6 @@ func (m *Manager) IconFile(name string) (string, bool) {
 		return "", false
 	}
 	return p, true
-}
-
-// extractLuaScripts 解出包内所有 .lua（main.lua 与 lib/*.lua），保留相对目录，只认基名防穿越。
-func extractLuaScripts(zr *zip.ReadCloser, target string) error {
-	for _, f := range zr.File {
-		name := filepath.ToSlash(f.Name)
-		if !strings.HasSuffix(name, ".lua") {
-			continue
-		}
-		dest := filepath.Join(target, filepath.Base(name))
-		if strings.HasPrefix(name, "lib/") {
-			if err := os.MkdirAll(filepath.Join(target, "lib"), 0o755); err != nil {
-				return err
-			}
-			dest = filepath.Join(target, "lib", filepath.Base(name))
-		}
-		if err := extractTo(f, dest); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func zipEntry(zr *zip.ReadCloser, base string) *zip.File {
-	for _, f := range zr.File {
-		if filepath.Base(f.Name) == base {
-			return f
-		}
-	}
-	return nil
 }
 
 func extractTo(f *zip.File, dest string) error {

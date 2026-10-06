@@ -126,7 +126,22 @@ var Core = "1.2.9"
 // 设置；助手侧 Recipe.requiredCookieKeys 预检 doubao/loomy；本地偏离登记于
 // tools/build-plugins.sh 头注，上游同步轮换 0dcbbff 底时必须保留）。AAR 随
 // Mobile 位重编、25 插件 so 重编（doubao 本地修复版仍标 v0.1.1）；Core 位不变。
-var Mobile = "1.4.11"
+// 1.5.0（2026-10-05）：随 APK v1.5.0（versionCode 17）同步——上游 v1.5.2 全量同步轮
+// （核心 97b3b68..0ddc177 恰 10 提交 + 插件仓 0f52234..1051ce2 30 提交）：
+// ①SDK/协议底座 v1.5.2（sdk.ReadSSE/streamutil/requestutil、cph.proto ContentPart
+//   image_detail/annotations/source 与 ContentDelta refusal/annotations/source/block_id
+//   新字段、日志脱敏硬化、32MiB 上限）；②三协议转换与流式恢复（caac836）；③luahost
+//   硬化（9b1ba46，取消贯通 + 凭据代理出站 + VM 上限）；④凭据与授权一致性大版本
+//   （f49335e：凭据账号锁、加解密错误传播、代理密码加密、登录限流、调度时区
+//   Asia/Shanghai 内嵌 tzdata、SQLite 迁移 000015/000016、备份恢复 ValidateBackup/
+//   PublishRestore、插件安装校验+失败回滚）；⑤内置插件 25→27（26 更新批次 + devin
+//   0.1.0/warp 0.1.0 新增内置，「安卓端暂不支持」徽章随内置数据自动消失），doubao
+//   0.1.3（上游 0.1.2 基座 + PR #1 三偏离保留 + 凭据外发 httptest 回归三件）；⑥面板
+//   dist 重嵌入、AAR 重编（-androidapi 34）；⑦壳层：升级后首启清面板 WebView HTTP
+//   缓存（修复旧 index.html 致面板导航静默失效）；账号生命周期审计日志（建档/轮换/
+//   删除/列表构成变更，凭据指纹不含明文）。Core 位保持 1.2.9（本地修订线，随上游
+//   同步不改号先例）。
+var Mobile = "1.5.0"
 
 // String 完整版本串："mobile (core x)" 形态，供 bridge.Version() 与关于页展示。
 func String() string { return Mobile + " (core " + Core + ")" }

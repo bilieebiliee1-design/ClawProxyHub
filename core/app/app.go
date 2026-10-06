@@ -359,6 +359,10 @@ func start(ctx context.Context, opts Options) (app *App, gwPort, tunPort int, er
 		return fail("open database", err)
 	}
 	a.db = db
+	// 代理密码明文存量迁移加密（上游 f49335e，幂等：无明文密码时零操作）
+	if err := account.EncryptProxyPasswords(db, opts.DataDir); err != nil {
+		return fail("encrypt proxy passwords", err)
+	}
 	// 运行日志（核心 / 隧道生命周期埋点；级别走设置实时读取）
 	settings := setting.New(db)
 	rl := runlog.New(db, settings.RunLevel)
@@ -376,6 +380,9 @@ func start(ctx context.Context, opts Options) (app *App, gwPort, tunPort int, er
 
 	plugins := plugmgr.NewManager(pluginDirOf(opts), db)
 	plugins.SetNativeLibDir(opts.NativeLibDir)
+	// 共享设置与凭据解密注入（上游 f49335e）：宿主按共享设置读 UA/Lua 开关，
+	// 按凭据解密函数解开代理密码后随凭据下发（插件按账号代理出站）。
+	plugins.Configure(settings, func(blob []byte) ([]byte, error) { return account.DecryptCredential(opts.DataDir, blob) })
 	// 安卓内置 Go 插件落盘（nativeLibraryDir 有 libplugin_<name>.so 而目录缺失时补
 	// manifest/icon；桌面为空操作）——使 Scan / 自启 / 市场安装状态走既有链路
 	plugins.EnsureBuiltinPlugins()
@@ -411,10 +418,10 @@ func start(ctx context.Context, opts Options) (app *App, gwPort, tunPort int, er
 	a.plugins = plugins
 
 	bus := event.New()
-	accounts := account.New(db, opts.DataDir, plugins)
+	accounts := account.New(db, opts.DataDir, plugins, settings)
 	accounts.SubscribeRefresh(ctx, bus)
 
-	engine := task.NewEngine(db, opts.DataDir, task.NewPluginRunner(plugins), bus)
+	engine := task.NewEngine(db, opts.DataDir, task.NewPluginRunner(plugins), bus, settings)
 	engine.Start(ctx)
 	a.engine = engine
 
@@ -579,13 +586,37 @@ func marketplaceURLOf(opts Options) string {
 }
 
 // seedAPIKey 首次部署引导：环境变量指定 key，不存在则入库（加密存储）。
+// 随上游 v1.5.2：按 KeyLookup 等值判定；存量无 lookup 的哈希/密文密钥逐条解密比对，
+// 命中即回填 lookup（升级平滑，不重复播种）。
 func seedAPIKey(db *gorm.DB, raw string, dataDir string) error {
-	var count int64
-	db.Model(&model.Key{}).Where("key_cipher = ?", string(account.EncryptCredential(dataDir, []byte(raw)))).Count(&count)
-	if count > 0 {
-		return nil
-	}
-	return db.Create(&model.Key{KeyCipher: string(account.EncryptCredential(dataDir, []byte(raw))), Name: "seed"}).Error
+	lookup := account.KeyLookupHash(raw)
+	return db.Transaction(func(tx *gorm.DB) error {
+		var count int64
+		if err := tx.Model(&model.Key{}).Where("key_lookup = ? OR key_cipher = ?", lookup, lookup).Count(&count).Error; err != nil {
+			return err
+		}
+		if count > 0 {
+			return nil
+		}
+		var old []model.Key
+		if err := tx.Where("key_lookup IS NULL OR key_lookup = ''").Find(&old).Error; err != nil {
+			return err
+		}
+		for _, key := range old {
+			plain, err := account.DecryptCredential(dataDir, []byte(key.KeyCipher))
+			if err != nil {
+				return err
+			}
+			if string(plain) == raw {
+				return tx.Model(&key).Update("key_lookup", lookup).Error
+			}
+		}
+		sealed, err := account.EncryptCredential(dataDir, []byte(raw))
+		if err != nil {
+			return err
+		}
+		return tx.Create(&model.Key{KeyCipher: string(sealed), KeyLookup: lookup, Name: "seed"}).Error
+	})
 }
 
 // decodeHex32 解析 32 字节 hex 密钥。

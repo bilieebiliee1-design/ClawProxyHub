@@ -8,17 +8,18 @@ import (
 	"testing"
 )
 
-// TestBuiltinRegistryAssets 内嵌清单与二进制版本同源：官方源 index 全量 25 个 Go 插件
-//（@0f52234，Lua autoclaw 动态安装不内置）必须带 manifest 与 icon。
+// TestBuiltinRegistryAssets 内嵌清单与二进制版本同源：官方源 index 全量 27 个 Go 插件
+//（@1051ce2 批次 25 更新 + devin/warp 0.1.0 新增内置；doubao 0.1.3 为 PR #1 本地修复版，
+// Lua autoclaw 0.1.2 动态安装不内置）必须带 manifest 与 icon。
 func TestBuiltinRegistryAssets(t *testing.T) {
 	want := map[string]string{
-		"chatjimmy": "0.1.1", "cline": "0.1.5", "codearts": "0.1.0", "codebuff": "0.1.1",
-		"commandcode": "0.1.2", "doubao": "0.1.1", "gorkcli": "0.1.1", "ima": "0.1.3",
-		"improvado": "0.1.1", "joycode": "0.1.1", "lobsterai": "0.1.7", "loomy": "0.1.1",
-		"mimo": "0.1.1", "mirasim": "0.1.1", "newapi": "0.1.4", "notion": "0.1.1",
-		"opencode": "0.1.4", "postman": "0.1.1", "puter": "0.1.1", "qoder": "0.1.1",
-		"raccoon": "0.1.0", "todofor": "0.1.1", "trae": "0.1.0", "workbuddy": "0.1.7",
-		"zcode": "0.1.1",
+		"chatjimmy": "0.1.2", "cline": "0.1.6", "codearts": "0.1.1", "codebuff": "0.1.2",
+		"commandcode": "0.1.3", "devin": "0.1.0", "doubao": "0.1.3", "gorkcli": "0.1.2",
+		"ima": "0.1.4", "improvado": "0.1.2", "joycode": "0.1.2", "lobsterai": "0.1.8",
+		"loomy": "0.1.2", "mimo": "0.1.2", "mirasim": "0.1.2", "newapi": "0.1.5",
+		"notion": "0.1.2", "opencode": "0.1.5", "postman": "0.1.2", "puter": "0.1.2",
+		"qoder": "0.1.2", "raccoon": "0.1.1", "todofor": "0.1.2", "trae": "0.1.1",
+		"warp": "0.1.0", "workbuddy": "0.1.8", "zcode": "0.1.2",
 	}
 	got := map[string]string{}
 	for _, b := range BuiltinPlugins() {
@@ -65,7 +66,7 @@ func TestEnsureBuiltinsIn(t *testing.T) {
 	if err != nil {
 		t.Fatalf("lobsterai manifest 未落盘: %v", err)
 	}
-	if !strings.Contains(string(mf), `"version": "0.1.7"`) {
+	if !strings.Contains(string(mf), `"version": "0.1.8"`) {
 		t.Fatalf("lobsterai manifest 版本不符: %s", mf)
 	}
 	if _, err := os.Stat(filepath.Join(dir, "lobsterai", "icon.png")); err != nil {
@@ -134,7 +135,7 @@ func TestBuiltinInstallCheck(t *testing.T) {
 		t.Fatalf("内置且二进制在位应放行: %v", err)
 	}
 	err := m.builtinInstallCheck("hello-world") // 官方 index 之外的插件（QA 遗留样例）
-	if err == nil || !strings.Contains(err.Error(), "未随 APK 内置") || !strings.Contains(err.Error(), "lobsterai v0.1.7") {
+	if err == nil || !strings.Contains(err.Error(), "未随 APK 内置") || !strings.Contains(err.Error(), "lobsterai v0.1.8") {
 		t.Fatalf("非内置应拒绝且列出可装清单, got: %v", err)
 	}
 	m2 := &Manager{dir: t.TempDir()} // 无 nativeLibDir
@@ -145,10 +146,10 @@ func TestBuiltinInstallCheck(t *testing.T) {
 
 // TestBuiltinVersionMismatch 版本差异文案；一致 / 非内置为空。
 func TestBuiltinVersionMismatch(t *testing.T) {
-	if got := builtinVersionMismatch("lobsterai", "0.1.6"); got == "" || !strings.Contains(got, "0.1.6") || !strings.Contains(got, "0.1.7") {
+	if got := builtinVersionMismatch("lobsterai", "0.1.7"); got == "" || !strings.Contains(got, "0.1.7") || !strings.Contains(got, "0.1.8") {
 		t.Fatalf("版本差异应给出说明, got: %q", got)
 	}
-	if got := builtinVersionMismatch("lobsterai", "0.1.7"); got != "" {
+	if got := builtinVersionMismatch("lobsterai", "0.1.8"); got != "" {
 		t.Fatalf("同版本应无文案, got: %q", got)
 	}
 	if got := builtinVersionMismatch("不存在", "1.0"); got != "" {

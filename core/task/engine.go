@@ -1,4 +1,8 @@
-// Package task — 调度引擎：核心只管"何时触发"，能力语义在插件。
+// engine.go — 调度引擎：周期扫描 + 有界 worker 异步执行（tick 不阻塞）。
+// 随上游 v1.5.2 f49335e 重构：规则经有界队列与 worker 池执行、调度推进与执行解耦、
+// 时区感知（settings.Location()，内嵌 tzdata）与设置保存串行化（SaveSettings）。
+// NexPort fork 保留：一键签到批量执行（RunAllNow + RunEvent 进度 + 跳过识别）、
+// logsink 日志、批量互斥（runAllMu）。
 package task
 
 import (
@@ -12,14 +16,17 @@ import (
 
 	"gorm.io/gorm"
 
-	"io.nexport.gateway/core/account"
 	"io.nexport.gateway/core/event"
 	"io.nexport.gateway/core/logsink"
 	"io.nexport.gateway/core/model"
 	"io.nexport.gateway/core/runlog"
-	pb "io.nexport.gateway/core/sdk/proto/cphv1"
 	"io.nexport.gateway/core/setting"
+	"io.nexport.gateway/core/textutil"
+	pb "io.nexport.gateway/core/sdk/proto/cphv1"
 )
+
+// maxWorkers 限制同时执行的规则数。
+const maxWorkers = 4
 
 // Runner 是调度引擎对插件调用层的抽象（由 plugin.Manager 适配注入）。
 type Runner interface {
@@ -29,23 +36,38 @@ type Runner interface {
 	RunTask(ctx context.Context, pluginName string, req *pb.RunTaskRequest) (*pb.RunTaskResponse, error)
 }
 
-// Engine 周期扫描 task_rules，到期即触发。
+// Engine 周期扫描 task_rules，到期规则异步执行（tick 不阻塞）。
 type Engine struct {
-	db      *gorm.DB
-	dataDir string
-	runner  Runner
-	bus     *event.Bus
-	stop    chan struct{}
+	db         *gorm.DB
+	dataDir    string
+	runner     Runner
+	bus        *event.Bus
+	settings   *setting.Store
+	scheduleMu sync.Mutex
+	stop       chan struct{}
+	stopped    sync.Once
+	workers    sync.Once
+	mu         sync.Mutex
+	running    map[int64]bool
+	queue      chan ruleJob
+	ctx        context.Context
+	cancel     context.CancelFunc
 }
 
 // NewEngine 创建调度引擎。
-func NewEngine(db *gorm.DB, dataDir string, runner Runner, bus *event.Bus) *Engine {
-	return &Engine{db: db, dataDir: dataDir, runner: runner, bus: bus, stop: make(chan struct{})}
+func NewEngine(db *gorm.DB, dataDir string, runner Runner, bus *event.Bus, stores ...*setting.Store) *Engine {
+	settings := setting.New(db)
+	if len(stores) > 0 {
+		settings = stores[0]
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	return &Engine{ctx: ctx, cancel: cancel, running: map[int64]bool{}, queue: make(chan ruleJob, 64), db: db, dataDir: dataDir, runner: runner, bus: bus, settings: settings, stop: make(chan struct{})}
 }
 
-// Start 启动扫描循环。残留的 running 记录（上次进程异常退出）标记为 failed。
+// Start 启动扫描循环。残留的 running/queued 记录（上次进程异常退出）标记为 failed。
+// 规则经有界队列执行，tick 不等上游 RPC。
 func (e *Engine) Start(ctx context.Context) {
-	e.db.Model(&model.TaskRun{}).Where("status = ?", "running").
+	e.db.Model(&model.TaskRun{}).Where("status IN ?", []string{"running", "queued"}).
 		Update("status", "failed")
 
 	go func() {
@@ -54,6 +76,7 @@ func (e *Engine) Start(ctx context.Context) {
 		for {
 			select {
 			case <-ctx.Done():
+				e.Stop()
 				return
 			case <-e.stop:
 				return
@@ -69,25 +92,28 @@ func (e *Engine) tick(ctx context.Context) {
 	defer func() {
 		if r := recover(); r != nil {
 			logsink.Printf("[task] tick panicked: %v", r)
-			runlog.New(e.db, func() string { return setting.New(e.db).RunLevel() }).
+			runlog.New(e.db, e.settings.RunLevel).
 				Error("task", "tick", "任务扫描异常", fmt.Sprintf("%v", r), nil)
 		}
 	}()
 	e.doTick(ctx)
 }
 
-// Stop 停止扫描循环。
-func (e *Engine) Stop() { close(e.stop) }
+// Stop 幂等停止（二次调用安全）。
+func (e *Engine) Stop() {
+	e.stopped.Do(func() { close(e.stop); e.cancel() })
+}
 
-// doTick 一轮扫描：补算缺失 next_run_at → 取到期规则 → 逐条触发。
-// doTick 一轮扫描：补算缺失 next_run_at → 取到期规则 → 逐条触发。
+// doTick 一轮扫描：补算缺失 next_run_at → 取到期规则 → 逐条异步触发。
 // 一键签到批量执行期间整轮跳过（互斥，见 runAllMu），下一轮补算。
 func (e *Engine) doTick(ctx context.Context) {
 	if !runAllMu.TryLock() {
 		return
 	}
 	defer runAllMu.Unlock()
-	now := time.Now()
+	e.scheduleMu.Lock()
+	defer e.scheduleMu.Unlock()
+	now := time.Now().UTC()
 
 	// next_run_at 缺失的启用规则（直插 DB / 历史数据）补算下次触发时刻
 	var unscheduled []model.TaskRule
@@ -101,8 +127,9 @@ func (e *Engine) doTick(ctx context.Context) {
 	}
 
 	var rules []model.TaskRule
+	// 队列限制执行并发；扫描不能只取前几条，否则无可用账号的规则会饿死后续任务。
 	if err := e.db.Where("enabled = ? AND next_run_at IS NOT NULL AND next_run_at <= ?",
-		true, now).Limit(20).Find(&rules).Error; err != nil {
+		true, now).Order("next_run_at, id").Find(&rules).Error; err != nil {
 		return
 	}
 	for i := range rules {
@@ -110,20 +137,107 @@ func (e *Engine) doTick(ctx context.Context) {
 	}
 }
 
-// fire 触发单条规则：先推进 next_run_at 防重入，再执行。
-func (e *Engine) fire(ctx context.Context, rule *model.TaskRule) {
-	next := e.computeNext(rule, time.Now())
-	e.db.Model(rule).Updates(map[string]interface{}{
-		"last_run_at": time.Now(),
-		"next_run_at": next,
-		"enabled":     rule.TriggerType != "once", // once 执行后归档（禁用）
-	})
-	e.executeRule(ctx, rule, nil)
+// SaveSettings 与调度扫描串行，避免旧时区计算覆盖刚失效的日历规则。
+func (e *Engine) SaveSettings(values map[string]string) error {
+	e.scheduleMu.Lock()
+	defer e.scheduleMu.Unlock()
+	return e.settings.SetMany(values)
 }
 
-// RunNow 立即执行一次规则（不新建规则、不影响调度时刻）。
-func (e *Engine) RunNow(ctx context.Context, rule *model.TaskRule) {
-	e.executeRule(ctx, rule, nil)
+// fire 入队成功才推进调度；队列满或同规则运行中则下轮再试。
+func (e *Engine) fire(ctx context.Context, rule *model.TaskRule) { _, _ = e.enqueue(rule, true) }
+
+// RunNow 立即执行一次规则（不新建规则、不影响调度时刻），返回首个执行记录 id。
+func (e *Engine) RunNow(ctx context.Context, rule *model.TaskRule) (int64, error) {
+	if ctx.Err() != nil {
+		return 0, ctx.Err()
+	}
+	return e.enqueue(rule, false)
+}
+
+type ruleJob struct {
+	rule     model.TaskRule
+	accounts []*model.Account
+	runs     []model.TaskRun
+}
+
+func (e *Engine) enqueue(rule *model.TaskRule, scheduled bool) (int64, error) {
+	if err := ValidateRule(rule); err != nil {
+		return 0, err
+	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	if e.ctx.Err() != nil {
+		return 0, e.ctx.Err()
+	}
+	if e.running[rule.ID] {
+		return 0, fmt.Errorf("rule is already queued or running")
+	}
+	if len(e.queue) == cap(e.queue) {
+		return 0, fmt.Errorf("task queue is full")
+	}
+	accounts, err := e.selectAccounts(rule)
+	if err != nil {
+		return 0, err
+	}
+	if len(accounts) == 0 {
+		return 0, fmt.Errorf("no eligible accounts")
+	}
+	job := ruleJob{rule: *rule, accounts: accounts}
+	now := time.Now().UTC()
+	var next *time.Time
+	if scheduled {
+		next = e.computeNext(rule, now)
+	}
+	err = e.db.Transaction(func(tx *gorm.DB) error {
+		if scheduled {
+			res := tx.Model(&model.TaskRule{}).Where("id = ? AND enabled = ?", rule.ID, true).Updates(map[string]interface{}{"last_run_at": now, "next_run_at": next, "enabled": rule.TriggerType != "once"})
+			if res.Error != nil {
+				return res.Error
+			}
+			if res.RowsAffected != 1 {
+				return fmt.Errorf("rule no longer enabled")
+			}
+		}
+		for _, acct := range accounts {
+			run := model.TaskRun{RuleID: &job.rule.ID, Status: "queued", StartedAt: now}
+			if acct != nil {
+				run.AccountID = &acct.ID
+			}
+			if err := tx.Create(&run).Error; err != nil {
+				return err
+			}
+			job.runs = append(job.runs, run)
+		}
+		return nil
+	})
+	if err != nil {
+		return 0, err
+	}
+	e.running[rule.ID] = true
+	e.workers.Do(func() {
+		for i := 0; i < maxWorkers; i++ {
+			go e.worker()
+		}
+	})
+	e.queue <- job
+	return job.runs[0].ID, nil
+}
+
+func (e *Engine) worker() {
+	for {
+		select {
+		case <-e.ctx.Done():
+			return
+		case job := <-e.queue:
+			for i, acct := range job.accounts {
+				e.executeAccount(e.ctx, &job.rule, acct, &job.runs[i])
+			}
+			e.mu.Lock()
+			delete(e.running, job.rule.ID)
+			e.mu.Unlock()
+		}
+	}
 }
 
 // RunEvent 一键签到/批量执行时向外播报的单条进度（逐任务状态与结果）。
@@ -206,7 +320,8 @@ func (e *Engine) RunAllNow(ctx context.Context, onEvent func(RunEvent)) (int, er
 	return total, nil
 }
 
-// runOne 对单个规则×账号执行一次能力并落执行历史（executeRule 的单任务内核）。
+// runOne 对单个规则×账号执行一次能力并落执行历史（一键签到的单任务内核）。
+// 执行内核与调度路径共用 runAccount（凭据账号锁 + 加解密错误传播，随上游 v1.5.2）。
 // 返回 (status, summary, error, skipped)。skipped 仅在 status=success 且插件以结构化信号
 // （warning 级站内通知 = 需人工前往）或约定摘要前缀「跳过：」表达「动作无法自动完成」时为
 // true；执行历史仍落 success（v1.4.0 验收修复③：一键签到计数区分跳过）。
@@ -216,18 +331,18 @@ func (e *Engine) runOne(ctx context.Context, rule *model.TaskRule, acct *model.A
 	run.Status = "running"
 	run.StartedAt = time.Now()
 	e.db.Create(&run)
-
-	req := &pb.RunTaskRequest{CapabilityId: rule.CapabilityID}
 	if acct != nil {
 		run.AccountID = &acct.ID
-		req.Credential = account.BuildCred(e.db, e.dataDir, acct, 0)
 	}
 
-	resp, err := e.runner.RunTask(ctx, pluginNameByID(e.db, rule.PluginID), req)
+	resp, err := e.runAccount(ctx, rule, acct)
 	switch {
 	case err != nil:
 		run.Status = "failed"
 		run.ErrorMessage = truncate(err.Error(), 1000)
+	case resp == nil:
+		run.Status = "failed"
+		run.ErrorMessage = "empty task response"
 	case resp.Error != nil && resp.Error.Code != 0:
 		run.Status = "failed"
 		run.ErrorMessage = truncate(resp.Error.Message, 1000)
@@ -235,16 +350,8 @@ func (e *Engine) runOne(ctx context.Context, rule *model.TaskRule, acct *model.A
 		run.Status = "success"
 		run.Summary = truncate(resp.Summary, 1000)
 		// 结构化明细快照（如成长任务列表）持久化，账号详情弹窗直接渲染
-		if len(resp.DetailJson) > 0 {
-			run.DetailJSON = truncate(resp.DetailJson, 1<<20)
-		}
-		// 凭据变更（如 token 刷新）回写账号
-		if resp.Changed && acct != nil && len(resp.Blob) > 0 {
-			e.db.Model(&model.Account{}).Where("id = ?", acct.ID).
-				Updates(map[string]interface{}{
-					"credential_blob": account.EncryptCredential(e.dataDir, resp.Blob),
-					"last_refresh_at": time.Now(),
-				})
+		if len(resp.DetailJson) > 0 && len(resp.DetailJson) <= 1<<20 && json.Valid([]byte(resp.DetailJson)) {
+			run.DetailJSON = resp.DetailJson
 		}
 	}
 	// 插件要求提醒用户（如站点签到需人工前往）→ 落站内通知，成功/失败均可携带
@@ -264,35 +371,6 @@ func (e *Engine) runOne(ctx context.Context, rule *model.TaskRule, acct *model.A
 	return run.Status, run.Summary, run.ErrorMessage,
 		run.Status == "success" && ((resp.GetNotification() != nil && resp.GetNotification().GetLevel() == "warning") ||
 			strings.HasPrefix(run.Summary, "跳过："))
-}
-
-// executeRule 对规则的目标账号逐个执行能力。onTask 非 nil 时在每任务开始/结束时回调
-// （一键签到进度通道复用同一执行内核，调度触发传 nil 保持零开销）。
-func (e *Engine) executeRule(ctx context.Context, rule *model.TaskRule, onTask func(RunEvent)) {
-	accounts, err := e.selectAccounts(rule)
-	if err != nil {
-		e.recordRun(rule, nil, "failed", "", err.Error())
-		return
-	}
-
-	pname := pluginNameByID(e.db, rule.PluginID)
-	for _, acct := range accounts {
-		if onTask != nil {
-			ev := RunEvent{RuleID: rule.ID, PluginID: rule.PluginID, Plugin: pname, CapabilityID: rule.CapabilityID, Running: true}
-			if acct != nil {
-				ev.Account, ev.AccountID = acct.DisplayName, acct.ID
-			}
-			onTask(ev)
-		}
-		status, summary, errMsg, _ := e.runOne(ctx, rule, acct)
-		if onTask != nil {
-			ev := RunEvent{RuleID: rule.ID, PluginID: rule.PluginID, Plugin: pname, CapabilityID: rule.CapabilityID, Status: status, Summary: summary, Error: errMsg}
-			if acct != nil {
-				ev.Account, ev.AccountID = acct.DisplayName, acct.ID
-			}
-			onTask(ev)
-		}
-	}
 }
 
 // selectAccounts 按 target_scope 选出目标账号；返回 nil 元素表示"全局执行一次"。
@@ -332,8 +410,10 @@ func (e *Engine) selectAccounts(rule *model.TaskRule) ([]*model.Account, error) 
 			out[i] = &accts[i]
 		}
 		return out, nil
-	default: // 全局能力：不绑定账号
+	case "global":
 		return []*model.Account{nil}, nil
+	default:
+		return nil, fmt.Errorf("invalid target scope")
 	}
 }
 
@@ -343,25 +423,26 @@ func (e *Engine) computeNext(rule *model.TaskRule, from time.Time) *time.Time {
 	switch rule.TriggerType {
 	case "interval":
 		d, err := time.ParseDuration(rule.TriggerValue)
-		if err != nil {
+		if err != nil || d <= 0 {
 			return nil
 		}
 		next = from.Add(d)
 	case "daily":
-		hh, mm := 9, 0
-		if n, err := fmt.Sscanf(rule.TriggerValue, "%d:%d", &hh, &mm); err != nil || n != 2 {
+		clock, err := time.Parse("15:04", rule.TriggerValue)
+		if err != nil {
 			return nil
 		}
-		next = time.Date(from.Year(), from.Month(), from.Day(), hh, mm, 0, 0, from.Location())
-		if !next.After(from) {
-			next = next.Add(24 * time.Hour)
+		// 按当地日历逐分钟查找，夏令时跳过不存在的时刻，回拨时按实际时间排序。
+		next = nextCron(fmt.Sprintf("%d %d * * *", clock.Minute(), clock.Hour()), from.In(e.settings.Location()))
+		if next.IsZero() {
+			return nil
 		}
 		// 随机抖动：设定时刻之后延迟 0~jitter，错开多账号同刻打上游（每天各自随机）；管理端可配，0 = 关闭
-		if jitter := setting.New(e.db).DailyJitter(); jitter > 0 {
+		if jitter := e.settings.DailyJitter(); jitter > 0 {
 			next = next.Add(time.Duration(rand.Int63n(int64(jitter))))
 		}
 	case "cron":
-		next = nextCron(rule.TriggerValue, from)
+		next = nextCron(rule.TriggerValue, from.In(e.settings.Location()))
 		if next.IsZero() {
 			return nil
 		}
@@ -374,6 +455,7 @@ func (e *Engine) computeNext(rule *model.TaskRule, from time.Time) *time.Time {
 	default:
 		return nil
 	}
+	next = next.UTC()
 	return &next
 }
 
@@ -401,10 +483,7 @@ func pluginNameByID(db *gorm.DB, id int64) string {
 }
 
 func truncate(s string, n int) string {
-	if len(s) <= n {
-		return s
-	}
-	return s[:n]
+	return textutil.Truncate(s, n)
 }
 
 func orDefault(s, def string) string {
@@ -422,13 +501,14 @@ func (e *Engine) ScheduleOnce(pluginID int64, capabilityID string, accountID int
 		target = fmt.Sprintf("[%d]", accountID)
 	}
 	rule := model.TaskRule{
+		Enabled:      true,
 		PluginID:     pluginID,
 		CapabilityID: capabilityID,
 		TriggerType:  "once",
-		TriggerValue: time.Now().Format(time.RFC3339),
+		TriggerValue: time.Now().UTC().Format(time.RFC3339),
 		TargetScope:  scope,
 		TargetJSON:   target,
-		NextRunAt:    ptrTime(time.Now()),
+		NextRunAt:    ptrTime(time.Now().UTC()),
 	}
 	return e.db.Create(&rule).Error
 }
@@ -482,7 +562,7 @@ func parseSchedule(def string) (string, string) {
 		}
 		return "cron", value
 	case "once":
-		return "once", time.Now().Format(time.RFC3339) // 不带时刻默认立即
+		return "once", time.Now().UTC().Format(time.RFC3339) // 不带时刻默认立即
 	}
 	return "daily", "09:00"
 }

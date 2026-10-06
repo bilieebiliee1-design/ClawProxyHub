@@ -8,14 +8,24 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 
 	"io.nexport.gateway/core/model"
 )
 
 // ctxKeyRole 请求上下文里的当前角色键。
 type ctxKeyRole struct{}
+
+func requireAdmin(w http.ResponseWriter, r *http.Request) bool {
+	if roleOf(r) == "admin" {
+		return true
+	}
+	http.Error(w, `{"error":"forbidden"}`, http.StatusForbidden)
+	return false
+}
 
 // roleOf 从上下文取角色，缺省 guest。
 func roleOf(r *http.Request) string {
@@ -59,7 +69,8 @@ func (s *Server) createUser(username, password string) bool {
 	if err != nil {
 		return false
 	}
-	return s.db.Create(&model.User{Username: username, PasswordHash: string(hash), Role: "admin"}).Error == nil
+	result := s.db.Exec(`INSERT INTO users (username, password_hash, role, created_at, updated_at) SELECT ?, ?, 'admin', ?, ? WHERE NOT EXISTS (SELECT 1 FROM users WHERE role = 'admin')`, username, string(hash), time.Now().UTC(), time.Now().UTC())
+	return result.Error == nil && result.RowsAffected == 1
 }
 
 // auth 管理员鉴权：只认 JWT Bearer（解析 role，免 bcrypt）。
@@ -114,12 +125,21 @@ func (s *Server) login(w http.ResponseWriter, r *http.Request) {
 	if !readBody(w, r, &body) {
 		return
 	}
+	if len(body.Username) > 32 || !s.limiter.allow(r, body.Username) {
+		w.Header().Set("Retry-After", "60")
+		http.Error(w, `{"error":"too many login attempts"}`, http.StatusTooManyRequests)
+		return
+	}
 	if !s.verifyPassword(body.Username, body.Password) {
 		http.Error(w, `{"error":"invalid credentials"}`, http.StatusUnauthorized)
 		return
 	}
 	role := s.roleOfUser(body.Username)
-	token := s.signJWT(body.Username, role)
+	token, err := s.signJWT(body.Username, role)
+	if err != nil {
+		http.Error(w, `{"error":"session unavailable"}`, http.StatusInternalServerError)
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{"token": token, "role": role})
 }
 
@@ -216,7 +236,7 @@ func (s *Server) changePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(body.Password) < 6 {
-		http.Error(w, `{"error":"密码至少 6 位"}`, http.StatusBadRequest)
+		http.Error(w, `{"error":"密码至少 10 位"}`, http.StatusBadRequest)
 		return
 	}
 	username := s.lookupUsername(r)
@@ -238,14 +258,16 @@ func (s *Server) changePassword(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"internal"}`, http.StatusInternalServerError)
 		return
 	}
-	s.db.Model(&model.User{}).Where("username = ?", username).
-		Update("password_hash", string(hash))
+	if err := s.db.Model(&model.User{}).Where("username = ?", username).
+		Updates(map[string]interface{}{"password_hash": string(hash), "auth_version": gorm.Expr("auth_version + 1")}).Error; err != nil {
+		http.Error(w, `{"error":"password update failed"}`, http.StatusInternalServerError)
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]bool{"changed": true})
 }
 
-// validateCredentials 引导/建号校验。NexPort fork（基于 ClawProxyHub（AGPL-3.0）修改构建）
-// 同步加强服务端密码策略：原项目仅"≥6 位"（auth.go:246-254）；安卓原生引导承诺
-// "≥10 位含大小写与数字"，服务端必须同强度校验，防止经面板接口绕过原生校验设置弱密码。
+// validateCredentials 密码策略为 NexPort fork 加强版（≥10 位含大小写与数字），与安卓
+// 原生引导承诺一致，防止经面板接口绕过原生校验设置弱密码（同步保留）。
 func validateCredentials(username, password string) string {
 	if username == "" || len(username) > 32 {
 		return "用户名必填且不超过 32 字符"
@@ -266,6 +288,9 @@ func validateCredentials(username, password string) string {
 	}
 	if !hasUpper || !hasLower || !hasDigit {
 		return "密码须同时包含大写字母、小写字母和数字"
+	}
+	if len(password) > 72 {
+		return "密码不超过 72 字节"
 	}
 	return ""
 }

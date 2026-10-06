@@ -20,7 +20,11 @@ func TestKeyMaskMatchesPlainTail(t *testing.T) {
 	t.Setenv("CPH_SECRET_KEY", strings.Repeat("ab", 32)) // 32 字节 hex 测试密钥
 	dataDir := t.TempDir()
 	raw := "cph-" + strings.Repeat("0123456789abcdef", 6) // createKey 同构：cph- + 48 hex，尾 8 位 = 89abcdef
-	cipher := string(account.EncryptCredential(dataDir, []byte(raw)))
+	blob, err := account.EncryptCredential(dataDir, []byte(raw))
+	if err != nil {
+		t.Fatalf("加密不可用（测试前提不成立）: %v", err)
+	}
+	cipher := string(blob)
 	if len(cipher) == len(raw) {
 		t.Fatalf("加密不可用（测试前提不成立）：cipher 与明文等长")
 	}

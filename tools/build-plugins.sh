@@ -9,18 +9,18 @@
 # PLUGINS_REPO=<插件仓> 不再改变构建来源，仅作防漂移校验（比对各插件 manifest 一致）。
 #
 # 清单来源：应用「官方」插件源 index.json（ClawProxyHubPlugins 仓库根 index.json，
-# 全量 25 个 Go 插件 @0f52234，chatjimmy/codebuff/doubao/gorkcli/improvado/joycode/
-# mimo/notion/postman/puter/qoder 11 个此前未上 index 的项已全部发布 + codearts/
-# loomy/raccoon/trae 4 个新插件；另有 Lua autoclaw 0.1.1，动态安装不受 noexec 限制，
-# 不内置）。版本取各插件 manifest.json（builtin 源码与二进制同源同版本，市场比对
-# 逻辑见 adminapi/marketplace.go）。源码偏离（新增偏离必须同步本注，重同步上游
-# builtin/ 时逐项保留，否则静默回退）：
+# 全量 27 个 Go 插件 @1051ce2：26 更新批次（25 Go 插件升版）+ devin/warp 0.1.0 新增
+# 内置（v1.5.0，「安卓端暂不支持」徽章随内置数据自动消失）；另有 Lua autoclaw 0.1.2，
+# 动态安装不受 noexec 限制，不内置）。版本取各插件 manifest.json（builtin 源码与
+# 二进制同源同版本，市场比对逻辑见 adminapi/marketplace.go）。源码偏离（新增偏离必须
+# 同步本注，重同步上游 builtin/ 时逐项保留，否则静默回退）：
 #   1) zcode/main.go 内嵌 system_prompt.json（安卓 nativeLibraryDir 只读，磁盘读取
 #      必失败，v1.4.3 热修，见该文件头注）；
-#   2) doubao 本地 401 修复（v1.4.11 缺陷②，上游 0f52234 及其 doubao v0.1.2=0dcbbff
-#      均未修）：upstream.go 凭据 Cookies 全量外发 Cookie 头（cookieHeader()）+
-#      main.go loginCookieHeader sessionid/sessionid_ss 预检 + finalizeLogin msToken
-#      先取凭据 Cookies 再落全局设置，见该两文件头注。
+#   2) doubao 0.1.3（v1.4.11 缺陷②修复 + v1.5.0 随上游 0.1.2=0dcbbff 基座，上游未
+#      收编 PR #1 前持续自带，见 builtin_test.go 清单注释）：在 0.1.2（ctx 取消传播 +
+#      sdk.ReadSSE 迁移）之上保留 PR #1 三偏离——upstream.go 凭据 Cookies 全量外发
+#      Cookie 头（cookieHeader()）+ main.go loginCookieHeader sessionid/sessionid_ss
+#      预检 + finalizeLogin msToken 先取凭据 Cookies 再落全局设置，见该两文件头注。
 #
 # 产出（双布局，字节同源）：
 #   A. jniLibs 规范（prepare-android.sh 消费口径，ABI 段为 GOARCH 口径）：
@@ -29,7 +29,7 @@
 #   B. ask 规范 <abi> 字面目录（arm64 / x64，libplugin_<名>_<abi>.so）：
 #     core/dist/plugins/arm64/libplugin_<名>_arm64.so
 #     core/dist/plugins/x64/libplugin_<名>_x64.so
-#   SHA256SUMS.txt 覆盖双布局全部 100 个 so（25 插件 × 2 ABI × 2 布局）。
+#   SHA256SUMS.txt 覆盖双布局全部 so（v1.5.0 起 27 插件 × 2 ABI × 2 布局 = 108 条）。
 #
 # 【必须 CGO_ENABLED=1 + NDK clang，不能照搬上游 pack 的纯 Go】与 build-luahost.sh
 # 同理：安卓上 Go 内建 resolver 无 /etc/resolv.conf → DNS 死路（见 tunnel/edge.go 头注），
@@ -50,9 +50,9 @@ set -euo pipefail
 REPO="${PLUGINS_REPO:-}"
 OUT="$DIST/plugins"
 BUILTIN="$CORE/plugmgr/builtin"
-# 官方源 index.json 实际清单（2026-09-29 快照 @0f52234，25 条 Go；Lua autoclaw 不内置。
-# 更新 index 后同步此列表）
-PLUGINS="chatjimmy cline codearts codebuff commandcode doubao gorkcli ima improvado joycode lobsterai loomy mimo mirasim newapi notion opencode postman puter qoder raccoon todofor trae workbuddy zcode"
+# 官方源 index.json 实际清单（2026-10-05 快照 @1051ce2，27 条 Go = 25 更新 + devin/warp
+# 新增；Lua autoclaw 0.1.2 不内置。更新 index 后同步此列表与 plugmgr/builtin_test.go）
+PLUGINS="chatjimmy cline codearts codebuff commandcode devin doubao gorkcli ima improvado joycode lobsterai loomy mimo mirasim newapi notion opencode postman puter qoder raccoon todofor trae warp workbuddy zcode"
 
 manifest_version() { awk -F'"' '/"version"/{print $4; exit}' "$1"; }
 
@@ -88,20 +88,25 @@ for name in $PLUGINS; do
 done
 
 # 防漂移校验：显式给定 PLUGINS_REPO 时，比对插件仓 manifest 与正树一致
+# （doubao 例外：正树为 PR #1 修复版 0.1.3，插件仓 main 仍 0.1.2，仅比对名称字段）
 if [ -n "$REPO" ]; then
   [ -d "$REPO/plugins" ] || { echo "PLUGINS_REPO 仓库不存在: $REPO" >&2; exit 1; }
   for name in $PLUGINS; do
     rmf="$REPO/plugins/$name/manifest.json"
     [ -f "$rmf" ] || { echo "PLUGINS_REPO 缺 $rmf" >&2; exit 1; }
-    diff "$rmf" "$BUILTIN/$name/manifest.json" >/dev/null || { echo "manifest 漂移: $name（插件仓与正树不一致）" >&2; exit 1; }
+    if [ "$name" = "doubao" ]; then
+      grep -q "\"name\": \"doubao\"" "$BUILTIN/$name/manifest.json" || { echo "manifest 漂移: doubao（正树非 doubao 清单）" >&2; exit 1; }
+    else
+      diff "$rmf" "$BUILTIN/$name/manifest.json" >/dev/null || { echo "manifest 漂移: $name（插件仓与正树不一致）" >&2; exit 1; }
+    fi
   done
-  echo "PLUGINS_REPO manifest 一致性校验通过（25/25）"
+  echo "PLUGINS_REPO manifest 一致性校验通过（27/27，doubao 按 PR#1 例外口径）"
 fi
 
 # SHA256SUMS.txt 覆盖双布局全部产物（abi 相对路径），供组包侧校验
 cd "$OUT"
 find arm64-v8a x86_64 arm64 x64 -name 'libplugin_*.so' -type f | LC_ALL=C sort | xargs sha256sum > SHA256SUMS.txt
-echo "sha256 manifest: $OUT/SHA256SUMS.txt（双布局 25×2×2=100 条）"
+echo "sha256 manifest: $OUT/SHA256SUMS.txt（双布局 27×2×2=108 条）"
 
 echo "PLUGIN_BUILD_OK"
 ls "$OUT" "$OUT/arm64-v8a" "$OUT/x86_64" "$OUT/arm64" "$OUT/x64"

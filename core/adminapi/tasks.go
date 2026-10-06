@@ -14,17 +14,9 @@ import (
 	"gorm.io/gorm"
 
 	"io.nexport.gateway/core/model"
+	"io.nexport.gateway/core/task"
 	pb "io.nexport.gateway/core/sdk/proto/cphv1"
 )
-
-// pluginNameByID 插件 id → name。
-func pluginNameByID(db *gorm.DB, id int64) string {
-	var p model.Plugin
-	if err := db.First(&p, id).Error; err != nil {
-		return ""
-	}
-	return p.Name
-}
 
 // toLocal / toLocalPtr 返回时间规范化（v1.3.0 方案 ⑤）：序列化前统一转到进程 Local
 // 时区。In(Local) 不改变时刻本身，只替换时区标注——面板「任务执行历史」直接截取
@@ -39,6 +31,15 @@ func toLocalPtr(t *time.Time) *time.Time {
 	}
 	v := t.In(time.Local)
 	return &v
+}
+
+// pluginNameByID 插件 id → name。
+func pluginNameByID(db *gorm.DB, id int64) string {
+	var p model.Plugin
+	if err := db.First(&p, id).Error; err != nil {
+		return ""
+	}
+	return p.Name
 }
 
 // capabilityLabelMap 运行中插件的能力 id → 展示名（zh 优先，回退 en / id）。
@@ -170,11 +171,10 @@ func (s *Server) listTaskRules(w http.ResponseWriter, r *http.Request) {
 			TriggerType: rule.TriggerType, TriggerValue: rule.TriggerValue,
 			TargetScope: rule.TargetScope, TargetJSON: rule.TargetJSON, Auto: rule.Auto,
 			Instance: instance, Accounts: accounts,
-			Enabled:   rule.Enabled,
-			NextRunAt: toLocalPtr(rule.NextRunAt), LastRunAt: toLocalPtr(rule.LastRunAt), // 时区规范化（⑤）
+			Enabled: rule.Enabled, NextRunAt: toLocalPtr(rule.NextRunAt), LastRunAt: toLocalPtr(rule.LastRunAt), // 时区规范化（⑤）
 		})
 	}
-	writeJSON(w, http.StatusOK, map[string]interface{}{"rules": out, "total": total})
+	writeJSON(w, http.StatusOK, map[string]interface{}{"rules": out, "total": total, "timezone": s.settings.Timezone()})
 }
 
 // pluginTaskCapabilities GET /admin/plugins/{name}/task-capabilities — 新建规则弹窗的能力下拉数据。
@@ -234,6 +234,10 @@ func (s *Server) createTaskRule(w http.ResponseWriter, r *http.Request) {
 		PluginID: body.PluginID, CapabilityID: body.CapabilityID,
 		TriggerType: body.TriggerType, TriggerValue: body.TriggerValue,
 		TargetScope: body.TargetScope, TargetJSON: target, Enabled: true,
+	}
+	if err := task.ValidateRule(&rule); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
 	}
 	if s.ruleDuplicated(&rule, 0) {
 		http.Error(w, `{"error":"已存在实例/能力/触发条件/触发值/账号范围完全一致的规则"}`, http.StatusConflict)
@@ -301,6 +305,10 @@ func (s *Server) updateTaskRule(w http.ResponseWriter, r *http.Request) {
 			updated.TargetJSON = t
 		}
 	}
+	if err := task.ValidateRule(&updated); err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
 	if s.ruleDuplicated(&updated, rule.ID) {
 		http.Error(w, `{"error":"已存在实例/能力/触发条件/触发值/账号范围完全一致的规则"}`, http.StatusConflict)
 		return
@@ -344,8 +352,12 @@ func (s *Server) runTaskRule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// 直接执行该规则（不新建 once 规则、不影响调度时刻）
-	s.engine.RunNow(r.Context(), &rule)
-	writeJSON(w, http.StatusOK, map[string]bool{"scheduled": true})
+	id, err := s.engine.RunNow(r.Context(), &rule)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusConflict)
+		return
+	}
+	writeJSON(w, http.StatusAccepted, map[string]interface{}{"scheduled": true, "run_id": id, "status": "queued"})
 }
 
 // runView 执行历史的语义视图：不暴露规则/账号/插件的业务 id。
@@ -371,9 +383,7 @@ func (s *Server) runViews(runs []model.TaskRun) []runView {
 	var out []runView
 	for _, run := range runs {
 		v := runView{ID: run.ID, Status: run.Status, Summary: run.Summary,
-			ErrorMessage: run.ErrorMessage,
-			StartedAt:    toLocal(run.StartedAt), FinishedAt: toLocalPtr(run.FinishedAt), // 时区规范化（⑤）
-		}
+			ErrorMessage: run.ErrorMessage, StartedAt: toLocal(run.StartedAt), FinishedAt: toLocalPtr(run.FinishedAt)} // 时区规范化（⑤）
 		if run.DetailJSON != "" {
 			v.Detail = json.RawMessage(run.DetailJSON)
 		}
@@ -577,9 +587,7 @@ func (s *Server) dashboardQuota(w http.ResponseWriter, r *http.Request) {
 		Order("accounts.plugin_id, accounts.instance_id").
 		Scan(&rows)
 
-	// 按 插件·实例 聚合（同插件多站点分开看；不同插件共用默认实例 instance_id=0 时
-	// 不得并成一行——聚合键必须含 plugin_id，否则首行插件名吞掉其余插件的账号与积分）
-	type acctKey struct{ pluginID, instanceID int64 }
+	// 按实例聚合（同插件多站点分开看）
 	type pluginQuota struct {
 		Plugin    string             `json:"plugin"`   // 插件 id
 		Label     string             `json:"label"`    // 展示：品牌名 · 实例名
@@ -594,19 +602,18 @@ func (s *Server) dashboardQuota(w http.ResponseWriter, r *http.Request) {
 		{"total_credits", "total"},
 		{"used_credits", "used"},
 	}
-	byKey := map[acctKey]*pluginQuota{}
-	var order []acctKey
+	byKey := map[int64]*pluginQuota{}
+	var order []int64
 	for _, row := range rows {
-		key := acctKey{row.PluginID, row.InstanceID}
-		pq, ok := byKey[key]
+		pq, ok := byKey[row.InstanceID]
 		if !ok {
 			pq = &pluginQuota{Plugin: row.PluginName, Instance: row.InstanceName, Quota: map[string]float64{}}
 			pq.Label = s.pluginBrandByID(row.PluginID)
 			if row.InstanceName != "" {
 				pq.Label += " · " + row.InstanceName
 			}
-			byKey[key] = pq
-			order = append(order, key)
+			byKey[row.InstanceID] = pq
+			order = append(order, row.InstanceID)
 		}
 		pq.Accounts++
 
@@ -675,7 +682,8 @@ func (s *Server) dashboardStats(w http.ResponseWriter, r *http.Request) {
 		RunningPlugins int64 `json:"running_plugins"`
 	}
 	s.db.Model(&model.RequestLog{}).Count(&stats.TotalRequests)
-	s.db.Model(&model.RequestLog{}).Where("created_at >= date('now','localtime')").Count(&stats.TodayRequests)
+	// created_at 落库为 UTC，日界取 UTC 与之对齐（localtime 在 CST 凌晨会超前一天，今日统计恒为 0）
+	s.db.Model(&model.RequestLog{}).Where("created_at >= date('now')").Count(&stats.TodayRequests)
 	var okCount int64
 	s.db.Model(&model.RequestLog{}).Where("status < 400").Count(&okCount)
 	if stats.TotalRequests > 0 {

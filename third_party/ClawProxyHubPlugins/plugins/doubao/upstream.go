@@ -1,8 +1,12 @@
 // doubao 上游协议：/chat/completion 请求构建 + SSE 流解析（照 doubao2api client.py）。
+//
+// 【401 登录态修复（NexPort 移动端反哺，PR 前的本地验证见 NexPort qa19）】
+// chatCompletion 新增外发凭据 Cookie 头（cookieHeader()）：修复前插件仅 csrfToken()
+// 消费 Cookies 一键、从不外发 Cookie 头，登录态鉴权完全缺失 → 建档即 401
+// 「会话已过期」（上游返回 {"code":710012001,"msg":"登录已过期"}）。
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"crypto/sha256"
@@ -12,6 +16,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"sync"
 
@@ -153,7 +158,7 @@ func buildCompletionPayload(text string, deepThink int, botID string) map[string
 
 // chatCompletion 发起 /chat/completion SSE 流并逐事件回调。
 // 返回 HTTP/解析层错误；业务错误经 onEvent(SSE 事件 JSON) 内处理。
-func (p *plugin) chatCompletion(cred *credential, req *pb.ChatRequest, model string,
+func (p *plugin) chatCompletion(ctx context.Context, cred *credential, req *pb.ChatRequest, model string,
 	onSSE func(name string, data []byte) error) error {
 
 	text := buildPrompt(req)
@@ -161,7 +166,7 @@ func (p *plugin) chatCompletion(cred *credential, req *pb.ChatRequest, model str
 	payload, _ := json.Marshal(buildCompletionPayload(text, deepThink, cred.BotID))
 
 	u := upstreamURL + "/chat/completion?" + securityParams(cred).Encode()
-	httpReq, err := http.NewRequestWithContext(context.Background(), "POST", u, bytes.NewReader(payload))
+	httpReq, err := http.NewRequestWithContext(ctx, "POST", u, bytes.NewReader(payload))
 	if err != nil {
 		return err
 	}
@@ -171,6 +176,9 @@ func (p *plugin) chatCompletion(cred *credential, req *pb.ChatRequest, model str
 	httpReq.Header.Set("Referer", upstreamURL+"/chat")
 	httpReq.Header.Set("User-Agent", p.userAgentStr())
 	httpReq.Header.Set("x-tt-passport-csrf-token", csrfToken(cred))
+	// 【401 登录态修复】凭据 Cookies 全量外发为 Cookie 头——登录态鉴权依据
+	//（修复前出站请求无 Cookie 头，实测抓包证实 → 服务端视为未登录返回 401）。
+	httpReq.Header.Set("Cookie", cookieHeader(cred))
 
 	resp, err := p.hc(cred).Do(httpReq)
 	if err != nil {
@@ -190,41 +198,22 @@ func (p *plugin) chatCompletion(cred *credential, req *pb.ChatRequest, model str
 		return parseUpstreamError(string(body))
 	}
 
-	scanner := bufio.NewScanner(resp.Body)
-	scanner.Buffer(make([]byte, 0, 64*1024), 4<<20) // 长行上限 4MB
 	var eventName string
-	var dataLines []string
-	flush := func() error {
-		if len(dataLines) == 0 {
-			eventName = ""
-			return nil
-		}
-		data := []byte(strings.Join(dataLines, "\n"))
-		dataLines = nil
-		name := eventName
-		eventName = ""
-		if name == "" {
-			name = "message"
-		}
-		return onSSE(name, data)
-	}
-	for scanner.Scan() {
-		line := scanner.Text()
+	return sdk.ReadSSE(resp.Body, 4<<20, func(line string) error {
 		switch {
+		case line == "":
+			eventName = ""
 		case strings.HasPrefix(line, "event:"):
 			eventName = strings.TrimSpace(line[6:])
 		case strings.HasPrefix(line, "data:"):
-			dataLines = append(dataLines, strings.TrimSpace(line[5:]))
-		case line == "":
-			if err := flush(); err != nil {
-				return err
+			name := eventName
+			if name == "" {
+				name = "message"
 			}
+			return onSSE(name, []byte(strings.TrimPrefix(line[5:], " ")))
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		return fmt.Errorf("read stream failed: %w", err)
-	}
-	return flush()
+		return nil
+	})
 }
 
 // parseUpstreamError 上游 JSON 错误体 / SSE 文本中的 gateway-error → 业务错误。
@@ -279,6 +268,21 @@ func csrfToken(c *credential) string {
 		return v
 	}
 	return c.Cookies["passport_csrf_token_default"]
+}
+
+// cookieHeader 组装凭据 Cookies 全量 "k=v; k2=v2" Cookie 头（键序固定保证可复现）。
+// 【401 登录态修复】登录态鉴权完全依赖此头。
+func cookieHeader(c *credential) string {
+	keys := make([]string, 0, len(c.Cookies))
+	for k := range c.Cookies {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	parts := make([]string, 0, len(keys))
+	for _, k := range keys {
+		parts = append(parts, k+"="+c.Cookies[k])
+	}
+	return strings.Join(parts, "; ")
 }
 
 // errAuth 会话失效类错误（core 侧提示重新登录）。

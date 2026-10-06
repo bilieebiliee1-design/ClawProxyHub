@@ -3,13 +3,14 @@ module io.nexport.gateway/core
 go 1.27.0
 
 require (
-	github.com/ShadowSmallBaby/ClawProxyHub v1.2.2
-	github.com/ShadowSmallBaby/ClawProxyHubPlugins v0.0.0-20260928125350-0f52234222fd
+	github.com/ShadowSmallBaby/ClawProxyHub v1.5.3-0.20261004201619-0ddc177bf78f
+	github.com/ShadowSmallBaby/ClawProxyHubPlugins v0.0.0-20261004204335-1051ce2f8caa
 	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	github.com/hashicorp/go-plugin v1.8.0
 	github.com/mattn/go-sqlite3 v1.14.52
+	github.com/warpdotdev/warp-proto-apis/apis/multi_agent v0.0.0-20260917164411-f5c1878026bc
 	golang.org/x/crypto v0.57.0
 	golang.org/x/net v0.58.0
 	google.golang.org/grpc v1.83.2

@@ -226,6 +226,14 @@ class PanelFragment : Fragment() {
         val holder = headlessHolder()
         webView = holder.ensureWebView(requireActivity())
         val wv = webView!!
+        // v1.5.0 修复②（应用升级后 WebView 缓存旧 index.html 致面板导航静默失效，
+        // v1.4.10 发现）：版本变更后首次创建 WebView 时清 HTTP 缓存——缓存里可能
+        // 残留旧版 index.html，新 dist 的新路由会被旧入口静默吞掉。只清 HTTP 缓存
+        // 不动 DOM storage/localStorage，面板登录态（JWT）与偏好不受影响。
+        if (Prefs.panelCacheClearedVersion(requireContext()) != BuildConfig.VERSION_CODE) {
+            wv.clearCache(true)
+            Prefs.setPanelCacheClearedVersion(requireContext(), BuildConfig.VERSION_CODE)
+        }
         wv.layoutParams = FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         wv.alpha = 0f

@@ -41,7 +41,7 @@ import (
 
 // ChatClient 测活对插件聊天能力的最小依赖（*plugmgr.Manager 实现；测试用假件注入）。
 type ChatClient interface {
-	Chat(req *pb.ChatRequest, pluginName string, cred *pb.CredentialBlob) (chan *pb.StreamEvent, error)
+	Chat(ctx context.Context, req *pb.ChatRequest, pluginName string, cred *pb.CredentialBlob) (<-chan *pb.StreamEvent, error)
 }
 
 // probeTarget 一个探测目标（渠道 × 模型）。
@@ -270,7 +270,10 @@ func (s *Server) probeAttempt(ctx context.Context, t probeTarget) (probeResult, 
 			return probeResult{}, fmt.Errorf("账号无模型目录（请在账号页同步模型后重试）")
 		}
 	}
-	cred := account.BuildCred(s.db, s.dataDir, &acct, 0)
+	cred, err := account.BuildCred(s.db, s.dataDir, &acct, 0)
+	if err != nil {
+		return probeResult{}, fmt.Errorf("构建凭据失败: %w", err)
+	}
 	req := &pb.ChatRequest{
 		Model: modelID, Stream: true, Source: "chat_completions",
 		Temperature: 0, MaxTokens: probeMaxTokens,
@@ -278,7 +281,7 @@ func (s *Server) probeAttempt(ctx context.Context, t probeTarget) (probeResult, 
 		Credential: cred,
 	}
 	start := time.Now()
-	events, err := s.chatClient().Chat(req, t.Plugin, cred)
+	events, err := s.chatClient().Chat(ctx, req, t.Plugin, cred)
 	if err != nil {
 		return probeResult{}, err
 	}

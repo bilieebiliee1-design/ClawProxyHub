@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 仅 debug 构建合并（QA 载具，v1.4.9 ①）；release 源集不含本目录 -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity
+            android:name="io.nexport.gateway.app.BrowserLoginQaActivity"
+            android:exported="true"
+            android:label="NX QA BrowserLogin">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

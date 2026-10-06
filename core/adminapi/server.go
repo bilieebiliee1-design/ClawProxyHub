@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"io"
 	"net/http"
 	"os"
@@ -29,6 +30,15 @@ import (
 
 // Server 管理后台。
 type Server struct {
+	jwtMu          sync.Mutex
+	jwtKey         []byte
+	limiter        loginLimiter
+	restoreMu      sync.Mutex
+	// accountSnapMu/accountSnap 账号列表构成签名（v1.5.0 miscFixes③ 账号消失观测）：
+	// listAccounts 每次调用重算全量快照签名，仅变化时写 run-logs（audit.accounts_list），
+	// 避免面板轮询刷屏；变化 = 建档/删除/状态迁移/改名等生命周期事件的事实源。
+	accountSnapMu sync.Mutex
+	accountSnap   string
 	db             *gorm.DB
 	accounts       *account.Service
 	plugins        *plugmgr.Manager
@@ -379,6 +389,8 @@ func (s *Server) submitLogin(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// 业务错误（验证码错误/凭据格式/上游拒绝）用 400：401 专属管理员会话失效，
 		// 前端见 401 会清 token 跳登录页
+		// 审计（v1.5.0 miscFixes③）：登录失败也是凭据生命周期事件（时间戳+错误码+指纹空位）
+		s.runLogger().Warn("audit", "login", "账号建档失败: "+body.Plugin, err.Error(), nil)
 		http.Error(w, `{"error":"`+err.Error()+`"}`, http.StatusBadRequest)
 		return
 	}
@@ -401,6 +413,49 @@ func (s *Server) submitLogin(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
+// auditAccountsSnapshot 账号列表构成签名（全量，不随查询过滤）：与上次快照比较，
+// 仅变化时写 run-logs（audit/accounts_list），携带逐账号 id/插件/名称/状态/凭据密文长度，
+// 为「账号消失」类异常留存时间线（5556 豆包账号消失第二复发观测，miscFixes③；
+// 只观测不改数据）。面板轮询重复调用无变化时零日志。
+func (s *Server) auditAccountsSnapshot() {
+	var accts []model.Account
+	if err := s.db.Order("id").Find(&accts).Error; err != nil {
+		return // db 不可用：观测静默退出，不影响响应
+	}
+	pluginNames := map[int64]string{}
+	var ps []model.Plugin
+	if err := s.db.Select("id, name").Find(&ps).Error; err == nil {
+		for _, pl := range ps {
+			pluginNames[pl.ID] = pl.Name
+		}
+	}
+	type fact struct {
+		ID      int64  `json:"id"`
+		Plugin  string `json:"plugin,omitempty"`
+		Name    string `json:"name"`
+		Status  string `json:"status"`
+		BlobLen int    `json:"blob_len"`
+	}
+	facts := make([]fact, 0, len(accts))
+	parts := make([]string, 0, len(accts))
+	for _, a := range accts {
+		facts = append(facts, fact{ID: a.ID, Plugin: pluginNames[a.PluginID], Name: a.DisplayName,
+			Status: a.Status, BlobLen: len(a.CredentialBlob)})
+		parts = append(parts, fmt.Sprintf("%d|%s|%s|%s|%d", a.ID, pluginNames[a.PluginID], a.DisplayName, a.Status, len(a.CredentialBlob)))
+	}
+	sig := fmt.Sprintf("count=%d %s", len(facts), strings.Join(parts, ";"))
+	s.accountSnapMu.Lock()
+	changed := sig != s.accountSnap
+	if changed {
+		s.accountSnap = sig
+	}
+	s.accountSnapMu.Unlock()
+	if changed {
+		detail, _ := json.Marshal(facts)
+		s.runLogger().Info("audit", "accounts_list", "账号列表构成变更", string(detail), nil)
+	}
+}
+
 // listAccounts GET /admin/accounts?plugin=stub
 func (s *Server) listAccounts(w http.ResponseWriter, r *http.Request) {
 	pluginName := r.URL.Query().Get("plugin")
@@ -418,6 +473,8 @@ func (s *Server) listAccounts(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"db"}`, http.StatusInternalServerError)
 		return
 	}
+	// 账号列表构成审计（v1.5.0 miscFixes③，账号消失观测）：只观测不改数据，见 auditAccountsSnapshot。
+	s.auditAccountsSnapshot()
 	type acctView struct {
 		ID          int64   `json:"id"`
 		PluginID    int64   `json:"plugin_id"`
@@ -434,8 +491,17 @@ func (s *Server) listAccounts(w http.ResponseWriter, r *http.Request) {
 		} `json:"credits,omitempty"`
 	}
 	var out []acctView
+	// N+1 优化（随上游 v1.5.2）：一次取全部账号↔分组映射，内存归组
+	type ag struct{ AccountID, GroupID int64 }
+	var links []ag
+	s.db.Model(&model.AccountGroup{}).Order("group_id").
+		Select("account_id, group_id").Scan(&links)
+	groupMap := map[int64][]int64{}
+	for _, l := range links {
+		groupMap[l.AccountID] = append(groupMap[l.AccountID], l.GroupID)
+	}
 	for _, a := range accts {
-		v := acctView{ID: a.ID, PluginID: a.PluginID, InstanceID: a.InstanceID, GroupIDs: accountGroupIDs(s.db, a.ID), Name: a.DisplayName,
+		v := acctView{ID: a.ID, PluginID: a.PluginID, InstanceID: a.InstanceID, GroupIDs: groupMap[a.ID], Name: a.DisplayName,
 			Status: a.Status, PauseReason: a.PauseReason}
 		if a.PausedUntil != nil {
 			t := a.PausedUntil.Format("2006-01-02T15:04:05Z07:00")
@@ -477,6 +543,9 @@ func (s *Server) deleteAccount(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"db"}`, http.StatusInternalServerError)
 		return
 	}
+	// 审计（v1.5.0 miscFixes③）：删除是「账号消失」的合法来源之一，落痕与异常消失区分。
+	s.runLogger().Info("audit", "account_delete", "账号删除",
+		fmt.Sprintf("plugin_id=%d name=%q status=%s impact=%+v", acct.PluginID, acct.DisplayName, acct.Status, impact), &id)
 	writeJSON(w, http.StatusOK, map[string]interface{}{"deleted": true, "impact": impact})
 }
 

@@ -34,6 +34,12 @@ object Prefs {
     fun onboardingDone(ctx: Context): Boolean = sp(ctx).getBoolean("onboarding_done", false)
     fun setOnboardingDone(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean("onboarding_done", v).apply()
 
+    // v1.5.0 修复②：面板 WebView HTTP 缓存清理水位（应用升级后首次创建 WebView 时
+    // 清缓存并记版本，防止 WebView 缓存旧 dist 的 index.html 致新路由导航静默失效）
+    fun panelCacheClearedVersion(ctx: Context): Int = sp(ctx).getInt("panel_cache_cleared_version", 0)
+    fun setPanelCacheClearedVersion(ctx: Context, v: Int) =
+        sp(ctx).edit().putInt("panel_cache_cleared_version", v).apply()
+
     /** 开机自启：默认关（架构方案 onboardingPlan/featureParity）。 */
     fun autoStart(ctx: Context): Boolean = sp(ctx).getBoolean("autostart", false)
     fun setAutoStart(ctx: Context, v: Boolean) = sp(ctx).edit().putBoolean("autostart", v).apply()

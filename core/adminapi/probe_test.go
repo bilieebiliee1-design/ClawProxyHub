@@ -24,7 +24,7 @@ type fakeChat struct {
 	gen     time.Duration  // 首事件 → 首内容延迟
 }
 
-func (f *fakeChat) Chat(req *pb.ChatRequest, pluginName string, cred *pb.CredentialBlob) (chan *pb.StreamEvent, error) {
+func (f *fakeChat) Chat(ctx context.Context, req *pb.ChatRequest, pluginName string, cred *pb.CredentialBlob) (<-chan *pb.StreamEvent, error) {
 	ch := make(chan *pb.StreamEvent, 8)
 	m := req.Model
 	f.mu.Lock()

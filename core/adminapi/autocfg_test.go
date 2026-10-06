@@ -118,7 +118,11 @@ func TestAutoConfigGroupRoutesKey(t *testing.T) {
 	if err := s.db.First(&k, out.Key.ID).Error; err != nil {
 		t.Fatal(err)
 	}
-	if got := string(account.DecryptCredential(s.dataDir, []byte(k.KeyCipher))); got != out.Key.Key {
+	plain, err := account.DecryptCredential(s.dataDir, []byte(k.KeyCipher))
+	if err != nil {
+		t.Fatalf("decrypt: %v", err)
+	}
+	if got := string(plain); got != out.Key.Key {
 		t.Fatalf("reveal mismatch")
 	}
 }
@@ -203,7 +207,11 @@ func TestAutoConfigModelConflict(t *testing.T) {
 func TestAutoConfigKeyExists(t *testing.T) {
 	s, _ := seedAutocfg(t)
 	raw := "cph-existing-key"
-	s.db.Create(&model.Key{KeyCipher: string(account.EncryptCredential(s.dataDir, []byte(raw))),
+	blob, err := account.EncryptCredential(s.dataDir, []byte(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.db.Create(&model.Key{KeyCipher: string(blob),
 		KeyLookup: account.KeyLookupHash(raw), Name: "existing", Enabled: true})
 	acctID := addAccount(t, s, "ptest", `[{"id":"m"}]`)
 	out := s.autoConfigForAccount("ptest", acctID)

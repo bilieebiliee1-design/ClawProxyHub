@@ -258,7 +258,12 @@ func (s *Server) autoConfigKey(out *autoConfigResult) {
 	s.db.Model(&model.Key{}).Count(&n)
 	if n == 0 {
 		raw := "cph-" + randHex(24)
-		k := model.Key{KeyCipher: string(account.EncryptCredential(s.dataDir, []byte(raw))),
+		blob, cerr := account.EncryptCredential(s.dataDir, []byte(raw))
+		if cerr != nil {
+			out.Errors = append(out.Errors, fmt.Sprintf("生成默认密钥失败: %v", cerr))
+			return
+		}
+		k := model.Key{KeyCipher: string(blob),
 			KeyLookup: account.KeyLookupHash(raw), Name: s.settings.SiteAbbr(), Enabled: true}
 		if err := s.db.Create(&k).Error; err != nil {
 			out.Errors = append(out.Errors, fmt.Sprintf("生成默认密钥失败: %v", err))
@@ -281,7 +286,12 @@ func (s *Server) autoConfigKey(out *autoConfigResult) {
 	if len(k.KeyCipher) == 64 && k.KeyCipher[0] != 0x01 {
 		plain = "" // 存量 sha256 哈希格式不可回显（与 reveal 行为一致）
 	} else {
-		plain = string(account.DecryptCredential(s.dataDir, []byte(k.KeyCipher)))
+		dec, derr := account.DecryptCredential(s.dataDir, []byte(k.KeyCipher))
+		if derr != nil {
+			plain = "" // 解密失败按不可回显处理（与 reveal 行为一致）
+		} else {
+			plain = string(dec)
+		}
 	}
 	out.Key = &struct {
 		ID      int64  `json:"id"`

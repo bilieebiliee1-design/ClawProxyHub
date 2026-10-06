@@ -15,7 +15,7 @@ core）与 `core/go.mod`、`core/luahost/go.mod` 为准；安卓侧以 AAB
 
 | 组件 | 版本（发行构建解析） | 许可 | 用途 |
 | --- | --- | --- | --- |
-| github.com/ShadowSmallBaby/ClawProxyHub | v1.2.2（上游核心） | AGPL-3.0 | 内核 fork 基底 |
+| github.com/ShadowSmallBaby/ClawProxyHub | v1.5.3-0.20261004201619-0ddc177bf78f（上游核心，v1.5.2 同步） | AGPL-3.0 | 内核 fork 基底 |
 | github.com/hashicorp/go-plugin | v1.8.0 | MPL-2.0（Copyright IBM Corp.） | 插件子进程运行时 |
 | google.golang.org/grpc | v1.83.2 | Apache-2.0 | 插件/宿主 RPC |
 | google.golang.org/protobuf | v1.36.12 | BSD-3-Clause（Go 作者） | 契约序列化 |
@@ -39,13 +39,15 @@ klauspost/compress（BSD-3）、gopacket（BSD-3）。完整清单见 cloudflare
 
 ## 一之二、内置 Go 插件（APK 预打包，来源仓库 ClawProxyHubPlugins）
 
-APK 内预打包的官方源 index 全量 25 个内置 Go 插件（chatjimmy 0.1.1 / cline 0.1.5 / codearts 0.1.0 /
-codebuff 0.1.1 / commandcode 0.1.2 / doubao 0.1.1 / gorkcli 0.1.1 / ima 0.1.3 / improvado 0.1.1 /
-joycode 0.1.1 / lobsterai 0.1.7 / loomy 0.1.1 / mimo 0.1.1 / mirasim 0.1.1 / newapi 0.1.4 /
-notion 0.1.1 / opencode 0.1.4 / postman 0.1.1 / puter 0.1.1 / qoder 0.1.1 / raccoon 0.1.0 /
-todofor 0.1.1 / trae 0.1.0 / workbuddy 0.1.7 / zcode 0.1.1，上游 @0f52234；
+APK 内预打包的官方源 index 全量 27 个内置 Go 插件（chatjimmy 0.1.2 / cline 0.1.6 / codearts 0.1.1 /
+codebuff 0.1.2 / commandcode 0.1.3 / devin 0.1.0 / doubao 0.1.3 / gorkcli 0.1.2 / ima 0.1.4 /
+improvado 0.1.2 / joycode 0.1.2 / lobsterai 0.1.8 / loomy 0.1.2 / mimo 0.1.2 / mirasim 0.1.2 /
+newapi 0.1.5 / notion 0.1.2 / opencode 0.1.5 / postman 0.1.2 / puter 0.1.2 / qoder 0.1.2 /
+raccoon 0.1.1 / todofor 0.1.2 / trae 0.1.1 / warp 0.1.0 / workbuddy 0.1.8 / zcode 0.1.2，
+上游 @1051ce2（devin/warp 0.1.0 为 v1.5.0 新增内置；doubao 0.1.3 为 PR #1 凭据外发修复版，
+该 PR 已于 2026-10-05 被上游并入 @55a3a51，三偏离自此为上游正典）；
 `core/dist/plugins/<abi>/libplugin_<名>_<abi>.so` → `app/src/main/jniLibs/<abi>/`，经
-`tools/build-plugins.sh` 交叉编译；Lua 插件 autoclaw 不预打包、走市场动态安装）的**来源仓库**：
+`tools/build-plugins.sh` 交叉编译；Lua 插件 autoclaw 0.1.2 不预打包、走市场动态安装）的**来源仓库**：
 
 - **github.com/ShadowSmallBaby/ClawProxyHubPlugins**（https://github.com/ShadowSmallBaby/ClawProxyHubPlugins ）
   —— **AGPL-3.0**（仓库根 `LICENSE` 为 GNU Affero General Public License v3.0 全文，已本地核实）。
@@ -57,9 +59,9 @@ todofor 0.1.1 / trae 0.1.0 / workbuddy 0.1.7 / zcode 0.1.1，上游 @0f52234；
 
 | 组件 | 版本（发行构建解析） | 许可 | 用途 |
 | --- | --- | --- | --- |
-| github.com/ShadowSmallBaby/ClawProxyHub | v1.2.2（经 gateway-mobile `core/go.mod:6` 锚定解析） | AGPL-3.0 | 上游核心库（插件宿主 API/共享类型） |
+| github.com/ShadowSmallBaby/ClawProxyHub | v1.5.3-0.20261004201619-0ddc177bf78f（v1.5.2 同步；经 gateway-mobile `core/go.mod` 锚定解析） | AGPL-3.0 | 上游核心库（插件宿主 API/共享类型） |
 | github.com/gorilla/websocket | v1.5.3 | BSD-2-Clause（Copyright 2013 The Gorilla WebSocket Authors；缓存 LICENSE 原文核实） | WebSocket 客户端 |
-| github.com/warpdotdev/warp-proto-apis/apis/multi_agent | v0.0.0-20260917164411-f5c1878026bc | **AGPL-3.0**（上游仓库 LICENSE.md 为 GNU Affero General Public License v3，Copyright (C) 2020-2026 Denver Technologies, Inc.——经 GitHub API 于 2026-09-26 本地核实；该许可文件未随 go module 归档分发，归档内仅 go.mod/go.sum/.proto/生成代码，使用方需自上游仓库获取许可全文） | lobsterai 插件上游协议 stub |
+| github.com/warpdotdev/warp-proto-apis/apis/multi_agent | v0.0.0-20260917164411-f5c1878026bc | **AGPL-3.0**（上游仓库 LICENSE.md 为 GNU Affero General Public License v3，Copyright (C) 2020-2026 Denver Technologies, Inc.——经 GitHub API 于 2026-09-26 本地核实；该许可文件未随 go module 归档分发，归档内仅 go.mod/go.sum/.proto/生成代码，使用方需自上游仓库获取许可全文） | lobsterai / warp 插件上游协议 stub（v1.5.0 warp 插件新增同款依赖） |
 | golang.org/x/crypto | v0.57.0 | BSD-3-Clause（Go 作者） | 加密原语 |
 | google.golang.org/grpc | v1.83.2 | Apache-2.0 | 插件/宿主 RPC |
 | google.golang.org/protobuf | v1.36.12 | BSD-3-Clause（Go 作者） | 契约序列化 |
@@ -135,6 +137,23 @@ com.google.guava:listenablefuture:1.0；org.jetbrains:annotations:13.0。
 
 #### 安卓侧变更记录（合规复审追踪）
 
+- **v1.5.0（2026-10-05）**：**§一之二 内置 Go 插件 25 → 27**——官方源 index 26 插件更新
+  批次全量收编（上游 ClawProxyHubPlugins @1051ce2：chatjimmy 0.1.2 / cline 0.1.6 /
+  codearts 0.1.1 / codebuff 0.1.2 / commandcode 0.1.3 / doubao 0.1.3 / gorkcli 0.1.2 /
+  ima 0.1.4 / improvado 0.1.2 / joycode 0.1.2 / lobsterai 0.1.8 / loomy 0.1.2 /
+  mimo 0.1.2 / mirasim 0.1.2 / newapi 0.1.5 / notion 0.1.2 / opencode 0.1.5 /
+  postman 0.1.2 / puter 0.1.2 / qoder 0.1.2 / raccoon 0.1.1 / todofor 0.1.2 /
+  trae 0.1.1 / workbuddy 0.1.8 / zcode 0.1.2）+ 新增内置 **devin 0.1.0 / warp 0.1.0**
+  （warp 引 §一之二 既表依赖 github.com/warpdotdev/warp-proto-apis/apis/multi_agent
+  v0.0.0-20260917164411-f5c1878026bc（AGPL-3.0，原 lobsterai 行，本轮用途列更新为
+  lobsterai/warp 两插件），无新许可条目；devin 纯 Go 无第三方依赖）。doubao 0.1.3 =
+  PR #1（凭据 Cookies 全量外发 Cookie 头 + sessionid/sessionid_ss 建档预检 + msToken
+  三级兜底），**该 PR 已于 2026-10-05T18:15:07Z 被上游并入（@55a3a51）**，三偏离自此
+  上游正典、后续同步不再需偏离维护；zcode system_prompt.json 内嵌偏离延续（见 v1.4.3）。
+  内嵌清单与 libplugin_* 双 ABI 产物同源重编（SHA256SUMS 27×2×2=108 条）；
+  §一 ClawProxyHub 依赖锚点 v1.2.2 → 0ddc177 伪版本（v1.5.2 同步，两处依赖表已同步）；
+  Lua autoclaw 0.1.2 仍动态安装。Go 侧新增包（streamutil/requestutil/textutil 等）
+  均为上游 v1.5.2 SDK 同源组成，无新第三方组件。
 - **v1.4.4（2026-09-29）**：**§一之二 内置 Go 插件 10 → 25**——官方源 index 全量 25 个
   Go 插件（上游 ClawProxyHubPlugins @0f52234）全部随 APK 预打包，新增 15 个
   （chatjimmy 0.1.1 / codearts 0.1.0 / codebuff 0.1.1 / doubao 0.1.1 / gorkcli 0.1.1 /

@@ -678,6 +678,9 @@ func (s *Server) listPluginSources(w http.ResponseWriter, r *http.Request) {
 
 // probePluginSource GET /admin/plugin-sources/probe?url= — 试拉一个索引地址，返回条目数（添加/编辑源时校验可达）。
 func (s *Server) probePluginSource(w http.ResponseWriter, r *http.Request) {
+	if !requireAdmin(w, r) {
+		return
+	}
 	u := strings.TrimSpace(r.URL.Query().Get("url"))
 	if !strings.HasPrefix(u, "http://") && !strings.HasPrefix(u, "https://") {
 		http.Error(w, `{"error":"源地址需以 http:// 或 https:// 开头（指向 index.json）"}`, http.StatusBadRequest)

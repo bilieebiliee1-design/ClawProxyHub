@@ -2,6 +2,8 @@
 package account
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 
 	"gorm.io/gorm"
@@ -12,21 +14,21 @@ import (
 
 // BuildCred 账号 → 凭据信封：解密 blob + 刷新时间 + 实例 + 出站代理。
 // groupID>0 为路由命中的分组（代理优先级：账号 > 该分组）；0 = 仅按账号绑定回退全部分组。
-func BuildCred(db *gorm.DB, dataDir string, acct *model.Account, groupID int64) *pb.CredentialBlob {
+func BuildCred(db *gorm.DB, dataDir string, acct *model.Account, groupID int64) (*pb.CredentialBlob, error) {
+	blob, err := DecryptCredential(dataDir, acct.CredentialBlob)
+	if err != nil {
+		return nil, err
+	}
 	cred := &pb.CredentialBlob{
 		AccountId:  fmt.Sprintf("%d", acct.ID),
-		Blob:       DecryptCredential(dataDir, acct.CredentialBlob),
+		Blob:       blob,
 		InstanceId: acct.InstanceID,
 	}
 	if acct.LastRefreshAt != nil {
 		cred.UpdatedAt = acct.LastRefreshAt.Unix()
 	}
-	if groupID > 0 {
-		cred.Proxy = ProxyForAccountIn(db, acct.ID, groupID)
-	} else {
-		cred.Proxy = ProxyForAccount(db, acct.ID)
-	}
-	return cred
+	cred.Proxy, err = ProxyForAccountIn(db, dataDir, acct.ID, groupID)
+	return cred, err
 }
 
 // DefaultInstance 单例插件的默认实例（最早创建的一个）；没有则建一个「默认」。
@@ -57,4 +59,16 @@ func ResolveInstance(db *gorm.DB, pluginID, instanceID int64, multi bool) (*mode
 		return nil, fmt.Errorf("实例不存在或与插件不一致")
 	}
 	return &inst, nil
+}
+
+// CredentialFingerprint 凭据指纹（sha256 hex 前 12 位，对明文 blob 计算）：审计日志用于
+// 关联同一凭据的生命周期事件（建档 / 轮换 / 失效），只反映内容、不还原明文；
+// 注意必须传解密后的明文（落盘密文因 AES-GCM nonce 随机，每次封装都不同）。
+// 空 blob 返回空串。v1.5.0 随豆包账号消失审计（miscFixes③）引入。
+func CredentialFingerprint(blob []byte) string {
+	if len(blob) == 0 {
+		return ""
+	}
+	sum := sha256.Sum256(blob)
+	return hex.EncodeToString(sum[:6])
 }

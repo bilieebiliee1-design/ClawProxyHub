@@ -6,9 +6,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
+
+	"gorm.io/gorm"
 
 	"io.nexport.gateway/core/account"
 	"io.nexport.gateway/core/model"
@@ -34,11 +37,14 @@ func plainTail(dataDir string, cipher string) string {
 	if len(cipher) == 64 && cipher[0] != 0x01 {
 		return "" // 存量 sha256 hex：明文未存，无法派生
 	}
-	raw := string(account.DecryptCredential(dataDir, []byte(cipher)))
-	if !strings.HasPrefix(raw, "cph-") || len(raw) < len("cph-")+8 {
+	raw, err := account.DecryptCredential(dataDir, []byte(cipher))
+	if err != nil {
 		return ""
 	}
-	return raw[len(raw)-8:]
+	if !strings.HasPrefix(string(raw), "cph-") || len(raw) < len("cph-")+8 {
+		return ""
+	}
+	return string(raw[len(raw)-8:])
 }
 
 // listKeys GET /admin/keys — 密钥列表（含授权路由）。
@@ -72,23 +78,28 @@ func (s *Server) listKeys(w http.ResponseWriter, r *http.Request) {
 		ExpiresAt  *string `json:"expires_at"`
 		CreatedAt  string  `json:"created_at"`
 		LastUsedAt string  `json:"last_used_at"` // 最后调用（空 = 从未）
-		KeyMask    string  `json:"key_mask"`     // 掩码（cph-****<明文尾8位>；明文不可得时为识别哈希）
+		KeyMask    string  `json:"key_mask"`     // 掩码（cph-****abcd）
 		RouteIDs   []int64 `json:"route_ids"`    // 空 = 全部路由
+		RouteScope string  `json:"route_scope"`
 	}
 	var out []keyView
+	// N+1 优化：一次取全部 key↔route 映射，内存归组
+	type kr struct{ KeyID, RouteID int64 }
+	var links []kr
+	s.db.Model(&model.KeyRoute{}).Select("key_id, route_id").Scan(&links)
+	routeMap := map[int64][]int64{}
+	for _, l := range links {
+		routeMap[l.KeyID] = append(routeMap[l.KeyID], l.RouteID)
+	}
 	for _, k := range keys {
-		v := keyView{ID: k.ID, Name: k.Name, Enabled: k.Enabled,
+		v := keyView{ID: k.ID, Name: k.Name, Enabled: k.Enabled, RouteScope: k.RouteScope,
 			CreatedAt:  k.CreatedAt.Format("2006-01-02 15:04:05"),
 			LastUsedAt: lastUseMap[k.ID], KeyMask: keyMask(s.accounts.DataDir(), k)}
 		if k.ExpiresAt != nil {
 			t := k.ExpiresAt.Format("2006-01-02 15:04:05")
 			v.ExpiresAt = &t
 		}
-		var routes []model.KeyRoute
-		s.db.Where("key_id = ?", k.ID).Find(&routes)
-		for _, kr := range routes {
-			v.RouteIDs = append(v.RouteIDs, kr.RouteID)
-		}
+		v.RouteIDs = routeMap[k.ID]
 		out = append(out, v)
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{"keys": out})
@@ -96,12 +107,20 @@ func (s *Server) listKeys(w http.ResponseWriter, r *http.Request) {
 
 // revealKey GET /admin/keys/{id}/reveal — 单独回显密钥明文（供列表复制）。
 func (s *Server) revealKey(w http.ResponseWriter, r *http.Request) {
+	if !requireAdmin(w, r) {
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
 	var k model.Key
 	if err := s.db.First(&k, parseInt(r.PathValue("id"))).Error; err != nil {
 		http.Error(w, `{"error":"not found"}`, http.StatusNotFound)
 		return
 	}
-	plain := account.DecryptCredential(s.accounts.DataDir(), []byte(k.KeyCipher))
+	plain, err := account.DecryptCredential(s.accounts.DataDir(), []byte(k.KeyCipher))
+	if err != nil {
+		http.Error(w, `{"error":"credential decryption failed"}`, http.StatusInternalServerError)
+		return
+	}
 	// 存量哈希（无 0x01 前缀）无法回显明文，提示重建
 	if len(k.KeyCipher) == 64 && k.KeyCipher[0] != 0x01 {
 		http.Error(w, `{"error":"legacy key stored hashed, please recreate"}`, http.StatusConflict)
@@ -121,7 +140,12 @@ func (s *Server) createKey(w http.ResponseWriter, r *http.Request) {
 		name = s.settings.SiteAbbr()
 	}
 	raw := "cph-" + randHex(24)
-	k := model.Key{KeyCipher: string(account.EncryptCredential(s.accounts.DataDir(), []byte(raw))),
+	sealed, err := account.EncryptCredential(s.accounts.DataDir(), []byte(raw))
+	if err != nil {
+		http.Error(w, `{"error":"credential encryption failed"}`, http.StatusInternalServerError)
+		return
+	}
+	k := model.Key{KeyCipher: string(sealed),
 		KeyLookup: account.KeyLookupHash(raw), Name: name, Enabled: true}
 	if err := s.db.Create(&k).Error; err != nil {
 		http.Error(w, `{"error":"create failed"}`, http.StatusInternalServerError)
@@ -149,8 +173,10 @@ func (s *Server) updateKey(w http.ResponseWriter, r *http.Request) {
 // deleteKey DELETE /admin/keys/{id}
 func (s *Server) deleteKey(w http.ResponseWriter, r *http.Request) {
 	id := parseInt(r.PathValue("id"))
-	s.db.Where("key_id = ?", id).Delete(&model.KeyRoute{})
-	s.db.Delete(&model.Key{}, id)
+	if err := s.db.Delete(&model.Key{}, id).Error; err != nil {
+		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 
@@ -169,14 +195,64 @@ func (s *Server) toggleKey(w http.ResponseWriter, r *http.Request) {
 func (s *Server) bindKeyRoutes(w http.ResponseWriter, r *http.Request) {
 	id := parseInt(r.PathValue("id"))
 	var body struct {
-		RouteIDs []int64 `json:"route_ids"`
+		RouteIDs   []int64 `json:"route_ids"`
+		RouteScope string  `json:"route_scope"`
 	}
 	if !readBody(w, r, &body) {
 		return
 	}
-	s.db.Where("key_id = ?", id).Delete(&model.KeyRoute{})
+	if body.RouteScope == "" {
+		body.RouteScope = "restricted"
+		if body.RouteIDs != nil && len(body.RouteIDs) == 0 {
+			body.RouteScope = "all"
+		}
+	}
+	if (body.RouteScope != "all" && body.RouteScope != "restricted") || (body.RouteIDs == nil && body.RouteScope != "all") || (body.RouteScope == "all" && len(body.RouteIDs) > 0) {
+		http.Error(w, `{"error":"invalid route scope"}`, http.StatusBadRequest)
+		return
+	}
+	ids := make(map[int64]bool)
 	for _, rid := range body.RouteIDs {
-		s.db.Create(&model.KeyRoute{KeyID: id, RouteID: rid})
+		ids[rid] = true
+	}
+	invalid := errors.New("invalid routes")
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		var key model.Key
+		if err := tx.First(&key, id).Error; err != nil {
+			return err
+		}
+		for rid := range ids {
+			var count int64
+			if err := tx.Model(&model.Route{}).Where("id = ?", rid).Count(&count).Error; err != nil {
+				return err
+			}
+			if count != 1 {
+				return invalid
+			}
+		}
+		if err := tx.Model(&key).Update("route_scope", body.RouteScope).Error; err != nil {
+			return err
+		}
+		if err := tx.Where("key_id = ?", id).Delete(&model.KeyRoute{}).Error; err != nil {
+			return err
+		}
+		for rid := range ids {
+			if err := tx.Create(&model.KeyRoute{KeyID: id, RouteID: rid}).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, invalid) {
+			status = http.StatusBadRequest
+		}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			status = http.StatusNotFound
+		}
+		http.Error(w, `{"error":"invalid key or routes; no changes saved"}`, status)
+		return
 	}
 	writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 }
@@ -299,14 +375,14 @@ func (s *Server) groupModels(w http.ResponseWriter, r *http.Request) {
 }
 
 // deleteGroup DELETE /admin/groups/{id}
-// 级联清理（v1.4.0 验收修复①）：删除分组后同步清理引用它的数据，避免孤儿残留——
-//   - 模型路由：仅指向该分组的路由整条删除（否则孤儿路由残留会占用全局唯一路由名，
-//     并使后续同插件自动配置按消歧策略只能建 <模型名>@<插件名> 后缀路由）；还指向
-//     其他分组的路由仅摘除该分组条目（剩余条目原样保留，权重合计可再经面板编辑）；
-//   - 降级引用：failover_group_id 指向该分组的路由关闭降级并清空引用（悬空引用）；
-//   - 关联行：account_groups / group_proxies 关联行、以及被删路由的 key_routes
-//     绑定行一并清理（无外键级联，SQLite 关联表手工清）。
 func (s *Server) deleteGroup(w http.ResponseWriter, r *http.Request) {
+	// 级联清理（v1.4.0 验收修复①）：删除分组后同步清理引用它的数据，避免孤儿残留——
+	//   - 模型路由：仅指向该分组的路由整条删除（否则孤儿路由残留会占用全局唯一路由名，
+	//     并使后续同插件自动配置按消歧策略只能建 <模型名>@<插件名> 后缀路由）；还指向
+	//     其他分组的路由仅摘除该分组条目（剩余条目原样保留，权重合计可再经面板编辑）；
+	//   - 降级引用：failover_group_id 指向该分组的路由关闭降级并清空引用（悬空引用）；
+	//   - 关联行：account_groups / group_proxies 关联行、以及被删路由的 key_routes
+	//     绑定行一并清理（无外键级联，SQLite 关联表手工清）。
 	id := parseInt(r.PathValue("id"))
 	s.db.Delete(&model.Group{}, id)
 
@@ -492,8 +568,10 @@ func (s *Server) updateRoute(w http.ResponseWriter, r *http.Request) {
 // deleteRoute DELETE /admin/routes/{id}
 func (s *Server) deleteRoute(w http.ResponseWriter, r *http.Request) {
 	id := parseInt(r.PathValue("id"))
-	s.db.Where("route_id = ?", id).Delete(&model.KeyRoute{})
-	s.db.Delete(&model.Route{}, id)
+	if err := s.db.Delete(&model.Route{}, id).Error; err != nil {
+		http.Error(w, `{"error":"delete failed"}`, http.StatusInternalServerError)
+		return
+	}
 	writeJSON(w, http.StatusOK, map[string]bool{"deleted": true})
 }
 
