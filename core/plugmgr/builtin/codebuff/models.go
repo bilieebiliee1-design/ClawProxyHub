@@ -1,5 +1,5 @@
 // 模型目录：免费层可用模型静态快照。
-package main
+package codebuff
 
 import (
 	"context"

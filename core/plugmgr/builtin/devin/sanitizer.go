@@ -1,5 +1,5 @@
 // 请求净化：规范系统提示词，移除工具 Schema 的描述性元数据。
-package main
+package devin
 
 import (
 	"encoding/json"

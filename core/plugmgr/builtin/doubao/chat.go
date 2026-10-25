@@ -1,5 +1,5 @@
 // chat.go — 对话入口 + SSE 事件解析状态机（思考/正文/工具增量；HTTP 见 upstream.go）。
-package main
+package doubao
 
 import (
 	"encoding/json"

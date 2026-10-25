@@ -1,5 +1,5 @@
 // model.go — 模型目录（batch_get_detail_param 多通道）。
-package main
+package trae
 
 import (
 	"context"

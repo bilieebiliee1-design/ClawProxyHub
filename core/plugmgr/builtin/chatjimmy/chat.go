@@ -1,5 +1,5 @@
 // Chat 编排：信封 → chatjimmy 私有请求体，解析一次性纯文本 + <|stats|> 用量尾块。
-package main
+package chatjimmy
 
 import (
 	"bytes"

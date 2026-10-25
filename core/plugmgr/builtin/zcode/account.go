@@ -1,6 +1,6 @@
 // Package main — zcode 账号：coding-plan API Key 解析（z/login → customerInfo →
 // api_keys → copy secretKey）+ 模型目录 + 配额快照 + 刷新。
-package main
+package zcode
 
 import (
 	"context"

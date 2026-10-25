@@ -1,5 +1,5 @@
 // upstream.go — snap-access HTTP：签名请求 helper + 模型/对话端点常量。
-package main
+package codearts
 
 import (
 	"bytes"

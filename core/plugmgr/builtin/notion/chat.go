@@ -1,5 +1,5 @@
 // notion 对话：建线程 → 组 transcript → runInference NDJSON 流 → 信封事件。
-package main
+package notion
 
 import (
 	"context"

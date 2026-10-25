@@ -1,5 +1,5 @@
 // account.go — 账号档案（展示名 = userId 或固定名）。
-package main
+package mimo
 
 import (
 	"context"

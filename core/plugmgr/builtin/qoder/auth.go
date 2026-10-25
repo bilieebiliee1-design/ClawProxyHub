@@ -1,5 +1,5 @@
 // auth.go — 认证：PAT→jobToken 交换/轮换（cosy 签名 + 私有 base64 编码）、登录/刷新。
-package main
+package qoder
 
 import (
 	"context"

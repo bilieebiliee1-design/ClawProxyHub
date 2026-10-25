@@ -1,5 +1,5 @@
 // models.go — 公开模型目录（api.puter.com/puterai/chat/models/details）。
-package main
+package puter
 
 import (
 	"context"

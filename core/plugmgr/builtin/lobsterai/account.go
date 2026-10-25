@@ -1,5 +1,5 @@
 // account.go — 账号档案与积分（刷新凭据、profile-summary/quota 双接口归一化、签到状态块）。
-package main
+package lobsterai
 
 import (
 	"context"

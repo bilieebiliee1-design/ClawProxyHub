@@ -1,5 +1,5 @@
 // 登录/刷新/校验（凭据解析与档案见 account.go）。
-package main
+package joycode
 
 import (
 	"context"

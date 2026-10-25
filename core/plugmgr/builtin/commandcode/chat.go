@@ -1,5 +1,5 @@
 // Chat 编排：CC 请求发送 + NDJSON 流泵 + idle 看门狗。
-package main
+package commandcode
 
 import (
 	"bytes"

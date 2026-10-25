@@ -1,7 +1,7 @@
 // ima 微信扫码登录：qrconnect 拉二维码 + 长轮询状态 + code 换 ima 凭证。
 // 全链路插件侧 HTTP 完成，不依赖浏览器跨源。
 // credential / credFrom 凭据 blob 也在此层（与其它插件 auth 层惯例一致）。
-package main
+package ima
 
 import (
 	"context"

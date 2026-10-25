@@ -1,6 +1,6 @@
 // deepseek.go — puter DeepSeek 思考模式专属处理：思考开关归一化、reasoning_content
 // 多轮回传、严格角色序列（合并相邻 assistant、拆多 tool_call）。仅 service==deepseek 启用。
-package main
+package puter
 
 import (
 	"github.com/ShadowSmallBaby/ClawProxyHub/sdk/requestutil"

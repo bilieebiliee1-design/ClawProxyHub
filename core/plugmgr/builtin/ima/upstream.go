@@ -1,5 +1,5 @@
 // ima 上游协议：init_session / qa SSE / refresh 请求构建 + Cookie 工具。
-package main
+package ima
 
 import (
 	"bytes"

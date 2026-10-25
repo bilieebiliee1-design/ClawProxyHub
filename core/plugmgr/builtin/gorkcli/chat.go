@@ -1,5 +1,5 @@
 // Chat 编排：统一信封 → xAI Responses 请求，SSE 交 responsesup 解析。
-package main
+package gorkcli
 
 import (
 	"bytes"

@@ -492,7 +492,8 @@ onMounted(async () => {
   height: 100%;
 }
 .task-pagination {
-  margin-top: 12px;
+  /* 0f0aecc 对位：margin→padding（滚动容器内 margin 顶部间距不稳，padding 恒生效） */
+  padding-top: 12px;
 }
 /* 实时进度条：页头与 tabs 之间的执行中任务流 */
 .task-live {

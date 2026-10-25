@@ -1,5 +1,5 @@
 // auth.go — 认证/登录：xAI OIDC refresh_token 换 access_token，登录与刷新。
-package main
+package gorkcli
 
 import (
 	"context"

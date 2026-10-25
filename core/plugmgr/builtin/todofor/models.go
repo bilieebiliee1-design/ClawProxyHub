@@ -1,5 +1,5 @@
 // todofor 模型目录：动态发现上游 /models，对外用短名，请求时转 runner id。
-package main
+package todofor
 
 import (
 	"context"

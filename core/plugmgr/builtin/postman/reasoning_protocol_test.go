@@ -1,4 +1,4 @@
-package main
+package postman
 
 import (
 	"github.com/ShadowSmallBaby/ClawProxyHub/sdk/requestutil"

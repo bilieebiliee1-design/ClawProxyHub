@@ -1,5 +1,5 @@
 // auth：登录（Login）+ 档案（GetProfile）+ 凭据 blob。
-package main
+package commandcode
 
 import (
 	"context"

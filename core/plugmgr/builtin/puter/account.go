@@ -1,5 +1,5 @@
 // account.go — 登录校验（whoami + metering）/ Refresh / GetProfile。
-package main
+package puter
 
 import (
 	"context"

@@ -1,5 +1,5 @@
 // upstream：CC 上游协议收敛（header / 预请求 / session）。
-package main
+package commandcode
 
 import (
 	"bytes"

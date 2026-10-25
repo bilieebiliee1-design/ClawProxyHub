@@ -1,5 +1,5 @@
 // 验证 HTTP 帧封装、流尾事件和多模态信封。
-package main
+package devin
 
 import (
 	"bufio"
@@ -8,7 +8,7 @@ import (
 	"encoding/binary"
 	"errors"
 	pb "github.com/ShadowSmallBaby/ClawProxyHub/sdk/proto/cphv1"
-	dp "github.com/ShadowSmallBaby/ClawProxyHubPlugins/plugins/devin/devinproto"
+	dp "github.com/ShadowSmallBaby/ClawProxyHubPlugins/plugins-go/devin/devinproto"
 	"github.com/ShadowSmallBaby/ClawProxyHubPlugins/shared"
 	"google.golang.org/protobuf/proto"
 	"io"

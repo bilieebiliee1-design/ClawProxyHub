@@ -1,5 +1,5 @@
 // notion 模型目录：对外模型名 → Notion 后台模型 key 的映射。
-package main
+package notion
 
 import (
 	"context"

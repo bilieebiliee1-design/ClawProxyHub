@@ -1,7 +1,7 @@
 github.com/ShadowSmallBaby/ClawProxyHub v1.5.3-0.20261004201619-0ddc177bf78f h1:d51SqPKLaQdXdzKtWCy3qRjUcmbj6zKqeovFyj65TcM=
 github.com/ShadowSmallBaby/ClawProxyHub v1.5.3-0.20261004201619-0ddc177bf78f/go.mod h1:iz8x9L7SJXehAZPbd4rwECO5RtSw6PjTbFAD/9OfwbQ=
-github.com/ShadowSmallBaby/ClawProxyHubPlugins v0.0.0-20261004204335-1051ce2f8caa h1:e7MfdordFJvdwkM5mGhh2fhSdFfSFxYMGcb82twLprg=
-github.com/ShadowSmallBaby/ClawProxyHubPlugins v0.0.0-20261004204335-1051ce2f8caa/go.mod h1:Y1unZAeykhHtxmaczapaP72SQD06P2G9MXipebn2hbk=
+github.com/ShadowSmallBaby/ClawProxyHubPlugins v0.0.0-20261015122607-d4090ee18e83 h1:MXtgGDm2YUYZmCPfwsRuCb/rfU2nGfEVeLLR1RGIM2s=
+github.com/ShadowSmallBaby/ClawProxyHubPlugins v0.0.0-20261015122607-d4090ee18e83/go.mod h1:MRjFqubtNb+tm1yULPMVPhTnZwasZkwrz8gc8JWHmkg=
 github.com/bufbuild/protocompile v0.14.1 h1:iA73zAf/fyljNjQKwYzUHD6AD4R8KMasmwa/FBatYVw=
 github.com/bufbuild/protocompile v0.14.1/go.mod h1:ppVdAIhbr2H8asPk6k4pY7t9zB1OU5DoEw9xY/FUi1c=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=

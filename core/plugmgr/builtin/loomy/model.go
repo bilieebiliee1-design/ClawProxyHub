@@ -1,5 +1,5 @@
 // model.go — 模型目录：Loomy Web 规范模型 id + 请求别名解析。
-package main
+package loomy
 
 import (
 	"context"

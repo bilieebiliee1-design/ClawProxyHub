@@ -1,5 +1,5 @@
 // Chat 编排：会话绑定 + SSE 泵 + function_call 过滤。
-package main
+package ima
 
 import (
 	"encoding/json"

@@ -1,5 +1,5 @@
 // account.go — 账号/凭证：凭据解析（PAT + 机器身份）与基本档案。
-package main
+package qoder
 
 import (
 	"context"

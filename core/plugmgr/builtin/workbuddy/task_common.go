@@ -1,7 +1,7 @@
 // task_common.go — 成长活动公共层：端点常量 + 宽松 envelope 请求 helper。
 // 上游把业务错误放在 HTTP 400 的 JSON body 里，code 数字/字符串混用，统一走 actData 宽松判定；
 // 无猫 / 门槛未达属账号状态，归跳过不算失败。
-package main
+package workbuddy
 
 import (
 	"context"

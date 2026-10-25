@@ -1,5 +1,5 @@
 // upstream.go — Loomy HTTP：聊天 SSE 建流（含瞬时过载重试）+ 额度/身份 GET。
-package main
+package loomy
 
 import (
 	"bytes"

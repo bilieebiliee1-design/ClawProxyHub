@@ -447,7 +447,8 @@ watch(tab, (v) => {
   height: 100%;
 }
 .log-pagination {
-  margin-top: 12px;
+  /* 0f0aecc 对位：margin→padding（滚动容器内 margin 顶部间距不稳，padding 恒生效） */
+  padding-top: 12px;
   justify-content: flex-end;
 }
 .dim {

@@ -1,5 +1,5 @@
 // task.go — 任务能力：每日签到（slot 找活动 → context 查状态 → action 幂等签到）。
-package main
+package lobsterai
 
 import (
 	"context"

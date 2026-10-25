@@ -1,13 +1,13 @@
 // 统一信封 → GetChatMessageRequest：品牌词净化 + 工具描述注入 +
 // 消息转换（当前轮图片才进 Images，历史图文本占位）。
-package main
+package devin
 
 import (
 	"fmt"
 	"strings"
 
 	pb "github.com/ShadowSmallBaby/ClawProxyHub/sdk/proto/cphv1"
-	devinproto "github.com/ShadowSmallBaby/ClawProxyHubPlugins/plugins/devin/devinproto"
+	devinproto "github.com/ShadowSmallBaby/ClawProxyHubPlugins/plugins-go/devin/devinproto"
 	shared "github.com/ShadowSmallBaby/ClawProxyHubPlugins/shared"
 	"google.golang.org/protobuf/proto"
 )

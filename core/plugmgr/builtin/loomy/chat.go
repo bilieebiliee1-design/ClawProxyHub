@@ -1,5 +1,5 @@
 // chat.go — 对话入口：单 content 建流 + OpenAI 兼容 SSE 解析 + 空回重试。
-package main
+package loomy
 
 import (
 	"context"

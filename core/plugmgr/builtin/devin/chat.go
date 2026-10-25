@@ -1,12 +1,12 @@
 // chat.go — 对话：信封 → GetChatMessageRequest → Connect 服务端流 → StreamEvent（含响应帧解析）。
-package main
+package devin
 
 import (
 	"errors"
 	"io"
 
 	pb "github.com/ShadowSmallBaby/ClawProxyHub/sdk/proto/cphv1"
-	devinproto "github.com/ShadowSmallBaby/ClawProxyHubPlugins/plugins/devin/devinproto"
+	devinproto "github.com/ShadowSmallBaby/ClawProxyHubPlugins/plugins-go/devin/devinproto"
 	"github.com/ShadowSmallBaby/ClawProxyHubPlugins/shared"
 	"google.golang.org/protobuf/proto"
 )

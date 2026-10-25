@@ -1,5 +1,5 @@
 // profile.go — 账号档案与积分明细组装（签到/旅行/盲盒/成长/积分包动态块）。
-package main
+package workbuddy
 
 import (
 	"context"

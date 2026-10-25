@@ -1,5 +1,5 @@
 // auth.go — 登录（凭据文件 / 浏览器 OAuth）、本地回调服务器、登录 URL 构造。
-package main
+package lobsterai
 
 import (
 	"context"

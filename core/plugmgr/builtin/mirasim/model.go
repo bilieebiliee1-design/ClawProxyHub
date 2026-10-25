@@ -1,5 +1,5 @@
 // model.go — 模型目录：静态兜底 + relay catalog/roster 收窄与上下文覆盖、[1m] 长上下文别名。
-package main
+package mirasim
 
 import (
 	"context"

@@ -1,5 +1,5 @@
 // model.go — 模型目录（Grok CLI 上游真实模型静态清单）。
-package main
+package gorkcli
 
 import (
 	"context"

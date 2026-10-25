@@ -1,5 +1,5 @@
 // chat.go — 对话入口 + 标准 OpenAI SSE 流解析（delta/tool_calls/usage → StreamEvent）。
-package main
+package qoder
 
 import (
 	"encoding/json"

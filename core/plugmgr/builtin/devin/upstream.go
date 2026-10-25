@@ -1,6 +1,6 @@
 // 手撸 ConnectRPC 客户端：proto unary / server-stream（帧封装）与 JSON unary。
 // 帧格式：1 字节 flags + 4 字节 big-endian 长度 + 消息体。
-package main
+package devin
 
 import (
 	"bufio"

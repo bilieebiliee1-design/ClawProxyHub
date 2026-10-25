@@ -1,5 +1,5 @@
 // task_travel.go — 猫猫旅行任务：领奖与出发同轮完成（到点领奖后立即改派）。
-package main
+package workbuddy
 
 import (
 	"context"

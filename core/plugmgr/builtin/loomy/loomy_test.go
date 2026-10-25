@@ -1,5 +1,5 @@
 // loomy_test.go — 纯函数单测：模型解析 / SSE 增量提取 / 信封折叠。
-package main
+package loomy
 
 import (
 	"strings"

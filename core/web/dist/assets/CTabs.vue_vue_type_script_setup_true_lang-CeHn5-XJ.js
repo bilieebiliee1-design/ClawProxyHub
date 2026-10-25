@@ -1,0 +1,1 @@
+import{l as n,R as p,ae as _,a1 as l,af as e,ag as t,P as c,S as i,ab as m,Q as f}from"./vue-CK0x166Y.js";const h=n({inheritAttrs:!1,__name:"CTabs",setup(u){return(s,b)=>{const r=c("t-tabs");return f(),p(r,e(t(s.$attrs)),_({_:2},[l(s.$slots,(d,a)=>({name:a,fn:i(o=>[m(s.$slots,a,e(t(o??{})))])}))]),1040)}}});export{h as _};

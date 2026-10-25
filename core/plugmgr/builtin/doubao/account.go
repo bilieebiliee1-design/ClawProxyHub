@@ -1,5 +1,5 @@
 // account.go — 账号/凭证：豆包会话凭据解析与基本档案。
-package main
+package doubao
 
 import (
 	"context"

@@ -1,5 +1,5 @@
 // account.go — 账号档案与积分（user_info 身份 + points/v1/balance 分池明细）。
-package main
+package raccoon
 
 import (
 	"context"

@@ -1,7 +1,7 @@
 // 设备指纹：形态与哈希逐字对齐官方 CLI 1.53.1。
 // 信号值不读宿主真机，而是按 apiKey 确定性伪造——同一 key 永远同一台设备
 // （重启 / 多实例 / 停用恢复后上游都应看到同一设备，换指纹本身是可疑信号）。
-package main
+package commandcode
 
 import (
 	"bytes"

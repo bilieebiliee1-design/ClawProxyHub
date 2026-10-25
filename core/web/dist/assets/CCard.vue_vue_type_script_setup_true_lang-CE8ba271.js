@@ -1,0 +1,1 @@
+import{l as t,R as o,ae as n,a1 as c,m as l,P as p,S as _,ab as d,af as i,ag as m,Q as f}from"./vue-CK0x166Y.js";const h=t({inheritAttrs:!1,__name:"CCard",setup(u){return(e,C)=>{const a=p("t-card");return f(),o(a,l(e.$attrs,{bordered:!1,class:"c-card"}),n({_:2},[c(e.$slots,(P,s)=>({name:s,fn:_(r=>[d(e.$slots,s,i(m(r??{})))])}))]),1040)}}});export{h as _};

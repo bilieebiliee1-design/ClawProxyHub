@@ -1,6 +1,6 @@
 // upstream.go — HTTP client、mrs-seal-v1（X25519+HKDF+ChaCha20）元数据封密、
 // relay 中继客户端（access 刷新、device 票据铸造/缓存、控制面/推理请求）。
-package main
+package mirasim
 
 import (
 	"bytes"

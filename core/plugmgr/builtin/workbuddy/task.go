@@ -1,5 +1,5 @@
 // task.go — 任务能力编排：声明能力 + 按 CapabilityId 分发（签到/盲盒/旅行/成长）。
-package main
+package workbuddy
 
 import (
 	"context"

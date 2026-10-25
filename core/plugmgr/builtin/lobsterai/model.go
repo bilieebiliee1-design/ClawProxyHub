@@ -1,5 +1,5 @@
 // model.go — 模型目录（apiFormat 决定 anthropic 直通 / openai 转换）。
-package main
+package lobsterai
 
 import (
 	"context"

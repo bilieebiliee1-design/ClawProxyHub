@@ -1,5 +1,5 @@
 // chat.go — 对话入口 + 上游 SSE POST + warp protobuf 帧解析 → StreamEvent。
-package main
+package warp
 
 import (
 	"bufio"

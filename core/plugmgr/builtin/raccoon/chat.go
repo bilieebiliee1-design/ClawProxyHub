@@ -1,5 +1,5 @@
 // chat.go — 对话：POST /api/web/llm/v2/chat/completions（标准 OpenAI 兼容 SSE）。
-package main
+package raccoon
 
 import (
 	"fmt"

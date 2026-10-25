@@ -1,5 +1,5 @@
 // account.go — 账号/凭证：凭据 JSON 解析（别名兼容）、JWT 解码、邮箱脱敏、档案。
-package main
+package gorkcli
 
 import (
 	"context"

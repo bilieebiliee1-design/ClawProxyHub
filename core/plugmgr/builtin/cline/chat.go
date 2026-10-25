@@ -1,5 +1,5 @@
 // chat.go — 对话：统一信封 → OpenAI 兼容 /chat/completions。
-package main
+package cline
 
 import (
 	"encoding/json"

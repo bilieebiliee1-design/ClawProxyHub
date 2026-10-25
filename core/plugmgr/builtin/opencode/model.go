@@ -1,5 +1,5 @@
 // model.go — 模型目录（双池并集）与档案。
-package main
+package opencode
 
 import (
 	"context"

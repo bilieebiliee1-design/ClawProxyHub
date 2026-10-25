@@ -1,5 +1,5 @@
 // account.go — 账号/凭证：凭据解析与基本档案。
-package main
+package joycode
 
 import (
 	"context"

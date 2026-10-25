@@ -1,6 +1,6 @@
 // 设备指纹：F 信号值不读宿主真机，而是按 token 确定性伪造（366 hex）——
 // 同一 token 永远同一台设备（换指纹本身是可疑信号）。
-package main
+package devin
 
 import (
 	"crypto/sha256"

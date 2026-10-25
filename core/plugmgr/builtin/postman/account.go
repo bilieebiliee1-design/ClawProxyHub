@@ -1,7 +1,7 @@
 // 账号能力：Login（api_key / cookie）、Refresh（静态密钥，原样返回）、
 // GetProfile（展示名 + 健康），ListModels（静态目录）。
 // Postman Agent Mode 无独立余额端点（额度只在对话 SSE 的 usage 事件里给），故不填 quota。
-package main
+package postman
 
 import (
 	"context"

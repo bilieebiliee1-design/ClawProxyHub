@@ -1,6 +1,6 @@
 // todofor 对话：信封历史 → todo content；开 WebSocket → 建 todo → 订阅 block:message 流；
 // 终止时 REST 拉权威消息取内容与用量，解析 <TOOL_CALL> 客户端工具调用。
-package main
+package todofor
 
 import (
 	"context"

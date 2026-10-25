@@ -6,7 +6,8 @@
 
 NexPort 安卓版把 ClawProxyHub 的 Go 核心（网关、路由、账号、分组、密钥、任务调度、市场）
 原样搬进一部手机：应用内完成引导、启动、装插件、开临时隧道、后台保活，面板就长在
-WebView 里。当前版本 **v1.5.0（versionCode 17）**（核心随上游 v1.5.2 全量同步）。
+WebView 里。当前版本 **v1.5.1（versionCode 18）**（插件同步轮：上游 v2.0.x 插件全量
+收编，核心 Go 零改动、Core 位保持 1.2.9）。
 
 ## 系统要求与设备兼容性
 
@@ -94,7 +95,7 @@ ClawProxyHub 的架构本来就是插件化的：核心只管网关、路由、�
 
 ### 获取安装包
 
-- **安卓 APK**：本仓库 [Releases](https://github.com/bilieebiliee1-design/ClawProxyHub/releases) 页提供（当前 v1.5.0，按 ABI 拆分附 arm64-v8a 专用 / x86_64 专用 / universal 三个 APK + AAB 与 SHA256 校验和；手机用户取 arm64 专用包）；也可以按下方步骤自行构建。
+- **安卓 APK**：本仓库 [Releases](https://github.com/bilieebiliee1-design/ClawProxyHub/releases) 页提供（当前 v1.5.1，按 ABI 拆分附 arm64-v8a 专用 / x86_64 专用 / universal 三个 APK + AAB 与 SHA256 校验和；手机用户取 arm64 专用包）；也可以按下方步骤自行构建。
 - **桌面版**：上游 [ShadowSmallBaby/ClawProxyHub](https://github.com/ShadowSmallBaby/ClawProxyHub)。
 - **源码**：安卓端完整源码即本分支 `mobile-port`；桌面端在 `main` 分支（上游内容）。
 
@@ -170,7 +171,32 @@ go run ./cmd/nexcore   # env CPH_DATA_DIR=./data；curl 127.0.0.1:<port>/health
    预打包）；市场安装仅放行 runtime=lua 包，Go 包明确拒绝（内置 Go 插件除外，
    二进制随 APK 经 nativeLibraryDir 提供）。
 7. **服务端密码策略加强**：/admin/setup 要求 ≥10 位含大小写与数字（原生引导同规）。
-8. **版本位**：`version.Core`（1.2.9，本地修订线；上游语义已随 v1.5.2 全量同步：SDK/协议契约、三协议转换、凭据与授权一致性、luahost 硬化、调度时区）+ `version.Mobile`（1.5.0，随 APK versionName/versionCode 同步）。
+8. **版本位**：`version.Core`（1.2.9，本地修订线；上游语义已随 v1.5.2 全量同步：SDK/协议契约、三协议转换、凭据与授权一致性、luahost 硬化、调度时区）+ `version.Mobile`（1.5.1，随 APK versionName/versionCode 同步）。
+
+## v1.5.1 更新内容（2026-10-25）
+
+**插件同步轮**：上游核心 v2.0.0/v2.0.1 发布，但核心侧的扩展体系/官方 Android App/
+管理器换轨属战略级变化，本轮整体推迟到下一核心同步大轮；本轮只收编插件面，
+核心 Go 代码零改动（Core 位保持 1.2.9），`go test`/`go vet` 全绿。
+
+- **最高优先：WorkBuddy 0.1.10 请求体净化失效修复**（上游 @ff0ffc8）：0.1.8 的
+  sanitizer 类型断言缺陷导致聊天链路净化从未执行、客户端特征签名原样外发（触发
+  上游 11128 报错）。已随全量插件源同步带入，内置版本直接升级。
+- **内置插件 27 → 29**：26 插件升版 + 新增内置 **CNB 0.1.0**（CNB AI 网关）与
+  **LogicC 0.1.0**——市场上两者此前标「安卓端暂不支持」，随本轮内置登记徽章自动
+  消失。29 插件全量重编（双 ABI 双布局，SHA256SUMS 116 条）。
+- **NewAPI 0.1.7 挑战服务**：接入 Turnstile 类验证服务（ezsolver/solverq 统一求解
+  适配器），面板插件设置同步支持下拉（oneOf）、密码框（format:password）与
+  整数范围（integer + min/max）三种新表单控件（上游 0a2ad41 对位迁移）。
+- **上游插件布局重构落地**（e1be07a：命名包 + New(version) + cmd 入口）：NexPort
+  以「每插件 cmd 适配层」方案落地（去掉上游桌面专用构建标签、import 指向正树），
+  后续同步不再受上游入口形态变化影响。
+- **豆包 0.1.4**：本地三偏离已全部上游正典化（PR #1），自此按上游原样同步，
+  不再携带本地补丁。
+- **面板两小件**：插件设置 schema 渲染扩展（oneOf/password/min/max/integer）+
+  分页顶部间距（上游 0f0aecc 对位）。
+- **升级无感**：本轮无管理端鉴权/数据库变化，升级后无需重新登录面板；
+  未加载插件的 manifest 版本仍滞后到首次加载时刷新（展示口径不变）。
 
 ## v1.5.0 更新内容（2026-10-05）
 

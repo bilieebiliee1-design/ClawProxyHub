@@ -1,6 +1,6 @@
 // sso.go — passToken → serviceToken 的 5 步小米 SSO 链（30 分钟缓存，401 强制刷新）。
 // 灰度回调自动钉回生产网关（回调宿主的 sts 未被 account.xiaomi.com 白名单收编）。
-package main
+package mimo
 
 import (
 	"context"

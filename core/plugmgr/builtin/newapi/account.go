@@ -1,5 +1,5 @@
 // account.go — 登录校验 / 资料与余额 / 模型目录 / 每日签到。
-package main
+package newapi
 
 import (
 	"context"

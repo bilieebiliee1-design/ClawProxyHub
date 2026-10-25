@@ -1,5 +1,5 @@
 // chat.go — 按入口协议转发，Responses 可按实例切换为 Chat 兼容模式。
-package main
+package newapi
 
 import (
 	"bytes"

@@ -1,4 +1,4 @@
-package main
+package workbuddy
 
 import "testing"
 

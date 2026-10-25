@@ -1,5 +1,5 @@
 // account.go — 凭据（loomy_web_session Cookie）解析、账号档案与刷新。
-package main
+package loomy
 
 import (
 	"context"

@@ -1,5 +1,5 @@
 // auth.go — 登录（Zen / Go tier API Key 校验）。
-package main
+package opencode
 
 import (
 	"context"

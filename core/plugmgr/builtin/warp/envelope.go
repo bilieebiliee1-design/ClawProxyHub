@@ -1,5 +1,5 @@
 // request.go — 统一信封 → warpapi.Request protobuf（stateless transcript 渲染 + 工具上下文）。
-package main
+package warp
 
 import (
 	"fmt"

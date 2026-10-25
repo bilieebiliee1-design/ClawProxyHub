@@ -1,5 +1,5 @@
 // 信封 ↔ CC 私有协议双向转换：信封 → 请求体、CC NDJSON → 信封事件。
-package main
+package commandcode
 
 import (
 	"encoding/json"

@@ -1,5 +1,5 @@
 // model：模型目录（上游动态 + 硬编码回退）。
-package main
+package commandcode
 
 import (
 	"context"

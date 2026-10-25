@@ -1,5 +1,5 @@
 // Package main — zcode 认证：OAuth 设备码登录（init/poll）+ 凭据校验 + gRPC Refresh。
-package main
+package zcode
 
 import (
 	"bytes"

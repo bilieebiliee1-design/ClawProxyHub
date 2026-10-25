@@ -1,7 +1,7 @@
 // task_progress.go — 用客户端埋点推进成长任务进度。
 // 服务端按 /v2/report 埋点判定任务进度，这里为每个任务码定义"客户端做这件事时
 // 会上报什么"，不真正发起模型请求（实测不需要，且省积分）。
-package main
+package workbuddy
 
 import (
 	"context"

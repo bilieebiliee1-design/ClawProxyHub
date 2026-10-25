@@ -1,5 +1,5 @@
 // model.go — 模型目录：doubao（快速）/ doubao-think（思考）/ doubao-expert（专家）。
-package main
+package doubao
 
 import (
 	"context"

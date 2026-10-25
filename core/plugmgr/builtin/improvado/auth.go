@@ -1,5 +1,5 @@
 // 凭据解析、HTTP client 与登录/账号档案。
-package main
+package improvado
 
 import (
 	"context"

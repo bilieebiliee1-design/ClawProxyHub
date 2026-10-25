@@ -1,5 +1,5 @@
 // pacer.go — 每认证 token 1 req/s 限速器（未公开驱动端点的突发平滑）。
-package main
+package puter
 
 import (
 	"context"

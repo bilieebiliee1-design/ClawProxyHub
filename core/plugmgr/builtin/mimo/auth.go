@@ -1,5 +1,5 @@
 // auth.go — 登录（凭据导入 passToken）与刷新。
-package main
+package mimo
 
 import (
 	"context"

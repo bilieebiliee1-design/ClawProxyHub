@@ -1,5 +1,5 @@
 // model.go — 模型目录（opengw gateway/config benefit 模型 ∪ snap 内置模型）。
-package main
+package codearts
 
 import (
 	"context"

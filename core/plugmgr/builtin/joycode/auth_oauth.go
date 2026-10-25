@@ -1,5 +1,5 @@
 // 浏览器 OAuth 登录：本地回调端口自动接住 JoyCode 登录页回吐的 pt_key。
-package main
+package joycode
 
 import (
 	"context"

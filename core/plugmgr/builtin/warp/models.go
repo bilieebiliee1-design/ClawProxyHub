@@ -1,5 +1,5 @@
 // models.go — GraphQL 模型动态发现（agentMode choices，每账号缓存）+ 余额。
-package main
+package warp
 
 import (
 	"bytes"

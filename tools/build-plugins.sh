@@ -1,26 +1,39 @@
 #!/usr/bin/env bash
 # build-plugins.sh — 官方 Go 插件安卓交叉编译（NexPort fork，插件安卓化方案 ①）。
 #
-# 【源码来源（2026-09-29 起正树自包含）】默认从正树 core/plugmgr/builtin/<名>/ 构建：
-# 完整 .go 源码与 manifest.json / icon.png 同目录（上游 ClawProxyHubPlugins
-# ba09d27 / e700625 / 7ae5cb0 / e0085d5 / aca4a44 已落正树）。SDK 依赖统一在
-# core/go.mod：上游 github.com/ShadowSmallBaby/ClawProxyHub v1.2.2（aca4a44）
-# + ClawProxyHubPlugins shared（伪版本，shared.go 与插件仓 1c054e2..0f52234 逐字同源）。
-# PLUGINS_REPO=<插件仓> 不再改变构建来源，仅作防漂移校验（比对各插件 manifest 一致）。
+# 【源码来源（2026-09-29 起正树自包含；2026-10-25 起 v1.5.1 上游命名包布局）】
+# 默认从正树 core/plugmgr/builtin/<名>/ 构建：完整 .go 源码与 manifest.json /
+# icon.png 同目录（上游 ClawProxyHubPlugins d4090ee 已落正树）。自上游 e1be07a 起
+# 插件源由根目录 package main 改为命名包 plugin.go（New(version) 构造器），桌面
+# 入口移至 cmd/main.go——正树 builtin/<名>/ 即上游命名包源，构建目标为
+# ./plugmgr/builtin/<名>/cmd（package main 入口）。SDK 依赖统一在 core/go.mod：
+# 上游 github.com/ShadowSmallBaby/ClawProxyHub v1.5.3-0…0ddc177（replace 钉死，
+# 见该文件头注——插件模块 @d4090ee 的 go.mod 要求 SDK≥6805f65，其 Serve 已迁
+# process.go 且 //go:build !android，MVS 静默顶版会破安卓构建）+ ClawProxyHubPlugins
+# d4090ee 伪版本（供 newapi 0.1.7 的 shared/challenge）。
+# PLUGINS_REPO=<插件仓> 不再改变构建来源，仅作防漂移校验（比对各插件 manifest 一致；
+# 仓库须检出含 plugins-go/ 目录的版本，d4090ee 起 plugins/ 已更名 plugins-go/）。
 #
 # 清单来源：应用「官方」插件源 index.json（ClawProxyHubPlugins 仓库根 index.json，
-# 全量 27 个 Go 插件 @1051ce2：26 更新批次（25 Go 插件升版）+ devin/warp 0.1.0 新增
-# 内置（v1.5.0，「安卓端暂不支持」徽章随内置数据自动消失）；另有 Lua autoclaw 0.1.2，
-# 动态安装不受 noexec 限制，不内置）。版本取各插件 manifest.json（builtin 源码与
-# 二进制同源同版本，市场比对逻辑见 adminapi/marketplace.go）。源码偏离（新增偏离必须
-# 同步本注，重同步上游 builtin/ 时逐项保留，否则静默回退）：
-#   1) zcode/main.go 内嵌 system_prompt.json（安卓 nativeLibraryDir 只读，磁盘读取
-#      必失败，v1.4.3 热修，见该文件头注）；
-#   2) doubao 0.1.3（v1.4.11 缺陷②修复 + v1.5.0 随上游 0.1.2=0dcbbff 基座，上游未
-#      收编 PR #1 前持续自带，见 builtin_test.go 清单注释）：在 0.1.2（ctx 取消传播 +
-#      sdk.ReadSSE 迁移）之上保留 PR #1 三偏离——upstream.go 凭据 Cookies 全量外发
-#      Cookie 头（cookieHeader()）+ main.go loginCookieHeader sessionid/sessionid_ss
-#      预检 + finalizeLogin msToken 先取凭据 Cookies 再落全局设置，见该两文件头注。
+# 全量 29 个 Go 插件 @d4090ee：27 更新批次（26 升版 + workbuddy 0.1.10 净化失效
+# 修复 + newapi 0.1.7 挑战服务）+ cnb/logicc 0.1.0 新增内置（v1.5.1）；cnb 上游
+# 无 icon.png（manifest 无 icon 字段），内嵌注册表 icon 可缺省。另有 Lua autoclaw
+# 0.1.3，动态安装不受 noexec 限制，不内置）。版本取各插件 manifest.json（builtin
+# 源码与二进制同源同版本，市场比对逻辑见 adminapi/marketplace.go）。
+# 源码偏离（新增偏离必须同步本注，重同步上游 builtin/ 时逐项保留，否则静默回退）：
+#   1) 各插件 cmd/main.go 入口适配层（上游 plugins-go/<名>/cmd/main.go 移植）：
+#      ①去掉上游 //go:build !android 标签（GOOS=android 需 main 入口；SDK pin
+#      0ddc177 下 sdk.Serve 定义于 sdk.go 无平台标签）；②import 改指正树命名包
+#      io.nexport.gateway/core/plugmgr/builtin/<名>（上游模块路径在本仓不可达）。
+#      版本注入契约不变：-X main.version → <名>.New(version)。
+#   2) zcode/plugin.go 内嵌 system_prompt.json（安卓 nativeLibraryDir 只读，磁盘
+#      读取必失败，v1.4.3 热修随 0.1.3 重涂；systemBlocks 内嵌优先、磁盘回退，
+#      见该文件头注）；
+#   3) newapi/challenge.go challengeClient：上游 Host.SettingsContext(ctx,name)
+#      （v2.0 *Context 变体）改旧 SDK 同步 Settings(name)（nil 失败语义一致，见
+#      该文件内注）。
+#   （doubao 0.1.4 起无本地偏离：PR #1 三偏离已上游化（55a3a51 合并，0.1.4 基座
+#      含 cookieHeader/loginCookieHeader/msToken），按上游原样同步。）
 #
 # 产出（双布局，字节同源）：
 #   A. jniLibs 规范（prepare-android.sh 消费口径，ABI 段为 GOARCH 口径）：
@@ -29,7 +42,7 @@
 #   B. ask 规范 <abi> 字面目录（arm64 / x64，libplugin_<名>_<abi>.so）：
 #     core/dist/plugins/arm64/libplugin_<名>_arm64.so
 #     core/dist/plugins/x64/libplugin_<名>_x64.so
-#   SHA256SUMS.txt 覆盖双布局全部 so（v1.5.0 起 27 插件 × 2 ABI × 2 布局 = 108 条）。
+#   SHA256SUMS.txt 覆盖双布局全部 so（v1.5.1 起 29 插件 × 2 ABI × 2 布局 = 116 条）。
 #
 # 【必须 CGO_ENABLED=1 + NDK clang，不能照搬上游 pack 的纯 Go】与 build-luahost.sh
 # 同理：安卓上 Go 内建 resolver 无 /etc/resolv.conf → DNS 死路（见 tunnel/edge.go 头注），
@@ -50,9 +63,10 @@ set -euo pipefail
 REPO="${PLUGINS_REPO:-}"
 OUT="$DIST/plugins"
 BUILTIN="$CORE/plugmgr/builtin"
-# 官方源 index.json 实际清单（2026-10-05 快照 @1051ce2，27 条 Go = 25 更新 + devin/warp
-# 新增；Lua autoclaw 0.1.2 不内置。更新 index 后同步此列表与 plugmgr/builtin_test.go）
-PLUGINS="chatjimmy cline codearts codebuff commandcode devin doubao gorkcli ima improvado joycode lobsterai loomy mimo mirasim newapi notion opencode postman puter qoder raccoon todofor trae warp workbuddy zcode"
+# 官方源 index.json 实际清单（2026-10-25 快照 @d4090ee，29 条 Go = 27 更新（26 升版
+# + workbuddy 0.1.10 净化失效修复）+ newapi 0.1.7 + cnb/logicc 0.1.0 新增；Lua
+# autoclaw 0.1.3 不内置。更新 index 后同步此列表与 plugmgr/builtin_test.go）
+PLUGINS="chatjimmy cline cnb codearts codebuff commandcode devin doubao gorkcli ima improvado joycode lobsterai logicc loomy mimo mirasim newapi notion opencode postman puter qoder raccoon todofor trae warp workbuddy zcode"
 
 manifest_version() { awk -F'"' '/"version"/{print $4; exit}' "$1"; }
 
@@ -64,7 +78,8 @@ mkdir -p "$OUT/arm64-v8a" "$OUT/x86_64" "$OUT/arm64" "$OUT/x64"
 for name in $PLUGINS; do
   mf="$BUILTIN/$name/manifest.json"
   [ -f "$mf" ] || { echo "缺 $mf（正树内置源码不全？）" >&2; exit 1; }
-  [ -f "$BUILTIN/$name/main.go" ] || { echo "缺 $BUILTIN/$name/main.go（正树内置源码不全？）" >&2; exit 1; }
+  [ -f "$BUILTIN/$name/plugin.go" ] || { echo "缺 $BUILTIN/$name/plugin.go（正树内置源码不全？）" >&2; exit 1; }
+  [ -f "$BUILTIN/$name/cmd/main.go" ] || { echo "缺 $BUILTIN/$name/cmd/main.go（入口适配层缺失？）" >&2; exit 1; }
   ver="$(manifest_version "$mf")"
   [ -n "$ver" ] || { echo "$mf 无版本号" >&2; exit 1; }
 
@@ -74,8 +89,9 @@ for name in $PLUGINS; do
       x64)   cgo_env amd64; abidir="x86_64";   abi="x86_64"   ;;
     esac
     out="$OUT/$abidir/libplugin_${name}_${abi}.so"
-    # 上游 tools/pack 同款 ldflags，正树模块内构建（SDK v1.2.2 由 core/go.mod 锚定）
-    ( cd "$CORE" && "$GO" build -trimpath -ldflags "-s -w -X main.version=$ver" -o "$out" "./plugmgr/builtin/$name" )
+    # 上游 tools/pack 同款 ldflags，正树模块内构建（SDK 0ddc177 由 core/go.mod
+    # replace 锚定；构建目标 = 命名包 + cmd 入口，e1be07a 布局）
+    ( cd "$CORE" && "$GO" build -trimpath -ldflags "-s -w -X main.version=$ver" -o "$out" "./plugmgr/builtin/$name/cmd" )
     verify16k "$out" "$out.readelf" && rm -f "$out.readelf"
     echo "built $out (v$ver, $(du -h "$out" | cut -f1))"
     unset GOOS GOARCH CC
@@ -88,25 +104,21 @@ for name in $PLUGINS; do
 done
 
 # 防漂移校验：显式给定 PLUGINS_REPO 时，比对插件仓 manifest 与正树一致
-# （doubao 例外：正树为 PR #1 修复版 0.1.3，插件仓 main 仍 0.1.2，仅比对名称字段）
+# （d4090ee 起插件目录为 plugins-go/；doubao 0.1.4 起与上游一致，无例外口径）
 if [ -n "$REPO" ]; then
-  [ -d "$REPO/plugins" ] || { echo "PLUGINS_REPO 仓库不存在: $REPO" >&2; exit 1; }
+  [ -d "$REPO/plugins-go" ] || { echo "PLUGINS_REPO 缺 plugins-go/（须检出 d4090ee 及以后）: $REPO" >&2; exit 1; }
   for name in $PLUGINS; do
-    rmf="$REPO/plugins/$name/manifest.json"
+    rmf="$REPO/plugins-go/$name/manifest.json"
     [ -f "$rmf" ] || { echo "PLUGINS_REPO 缺 $rmf" >&2; exit 1; }
-    if [ "$name" = "doubao" ]; then
-      grep -q "\"name\": \"doubao\"" "$BUILTIN/$name/manifest.json" || { echo "manifest 漂移: doubao（正树非 doubao 清单）" >&2; exit 1; }
-    else
-      diff "$rmf" "$BUILTIN/$name/manifest.json" >/dev/null || { echo "manifest 漂移: $name（插件仓与正树不一致）" >&2; exit 1; }
-    fi
+    diff "$rmf" "$BUILTIN/$name/manifest.json" >/dev/null || { echo "manifest 漂移: $name（插件仓与正树不一致）" >&2; exit 1; }
   done
-  echo "PLUGINS_REPO manifest 一致性校验通过（27/27，doubao 按 PR#1 例外口径）"
+  echo "PLUGINS_REPO manifest 一致性校验通过（29/29）"
 fi
 
 # SHA256SUMS.txt 覆盖双布局全部产物（abi 相对路径），供组包侧校验
 cd "$OUT"
 find arm64-v8a x86_64 arm64 x64 -name 'libplugin_*.so' -type f | LC_ALL=C sort | xargs sha256sum > SHA256SUMS.txt
-echo "sha256 manifest: $OUT/SHA256SUMS.txt（双布局 27×2×2=108 条）"
+echo "sha256 manifest: $OUT/SHA256SUMS.txt（双布局 29×2×2=116 条）"
 
 echo "PLUGIN_BUILD_OK"
 ls "$OUT" "$OUT/arm64-v8a" "$OUT/x86_64" "$OUT/arm64" "$OUT/x64"

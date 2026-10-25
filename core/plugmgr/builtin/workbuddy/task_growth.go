@@ -1,5 +1,5 @@
 // task_growth.go — 成长任务：状态机推进（批量接取 → 埋点推进 → 领奖）。进度埋点见 task_progress.go。
-package main
+package workbuddy
 
 import (
 	"context"

@@ -1,5 +1,5 @@
 // 指纹稳定性 + 净化正确性 + 解析器状态机单测。
-package main
+package devin
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	pb "github.com/ShadowSmallBaby/ClawProxyHub/sdk/proto/cphv1"
-	devinproto "github.com/ShadowSmallBaby/ClawProxyHubPlugins/plugins/devin/devinproto"
+	devinproto "github.com/ShadowSmallBaby/ClawProxyHubPlugins/plugins-go/devin/devinproto"
 	"google.golang.org/protobuf/proto"
 )
 

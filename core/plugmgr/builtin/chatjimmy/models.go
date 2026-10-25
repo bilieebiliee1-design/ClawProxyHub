@@ -1,5 +1,5 @@
 // 模型目录：静态列表（插件设置可覆盖）。
-package main
+package chatjimmy
 
 import (
 	"context"

@@ -1,5 +1,5 @@
 // task_blindbox.go — 开盲盒任务：查能量与配额，能量足够则一次开完。
-package main
+package workbuddy
 
 import (
 	"context"

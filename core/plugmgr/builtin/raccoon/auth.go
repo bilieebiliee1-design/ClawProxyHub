@@ -1,5 +1,5 @@
 // auth.go — 凭据解析、扫码登录轮询、Token 导入、续期。
-package main
+package raccoon
 
 import (
 	"context"
@@ -219,8 +219,8 @@ func (p *plugin) pollQROnce(code string) (token, refresh string, ok bool) {
 	defer resp.Body.Close()
 	raw, _ := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
 	var env struct {
-		Code    float64 `json:"code"`
-		Data    *struct {
+		Code float64 `json:"code"`
+		Data *struct {
 			Status       string `json:"status"`
 			AccessToken  string `json:"access_token"`
 			RefreshToken string `json:"refresh_token"`

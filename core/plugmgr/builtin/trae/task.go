@@ -2,7 +2,7 @@
 //
 // ⚠️ claim 响应不含积分数，真实数值只在 status 端点的 credits 字里；
 // 设备身份基于 uid 确定性派生（每账号独立稳定，规避设备级限流）。
-package main
+package trae
 
 import (
 	"context"

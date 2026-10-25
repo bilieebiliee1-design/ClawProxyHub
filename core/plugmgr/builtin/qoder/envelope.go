@@ -1,5 +1,5 @@
 // envelope.go — 信封 → 上游 OpenAI 兼容请求体（messages/tools/tool_choice 转换）。
-package main
+package qoder
 
 import (
 	"encoding/json"

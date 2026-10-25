@@ -1,5 +1,5 @@
 // 资料 / 余额（SeatManagement/GetUserStatus JSON Connect）。
-package main
+package devin
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"strconv"
 
 	pb "github.com/ShadowSmallBaby/ClawProxyHub/sdk/proto/cphv1"
-	devinproto "github.com/ShadowSmallBaby/ClawProxyHubPlugins/plugins/devin/devinproto"
+	devinproto "github.com/ShadowSmallBaby/ClawProxyHubPlugins/plugins-go/devin/devinproto"
 	"google.golang.org/protobuf/proto"
 )
 

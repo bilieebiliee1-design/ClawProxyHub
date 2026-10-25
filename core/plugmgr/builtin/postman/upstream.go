@@ -1,6 +1,6 @@
 // Postman Agent Mode 上游客户端：组 /_gw/chat 请求体、发起流式调用、解析工作区。
 // 线协议逆向自 postman-web 12.23.0。
-package main
+package postman
 
 import (
 	"bytes"

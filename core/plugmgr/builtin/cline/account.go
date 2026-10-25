@@ -1,5 +1,5 @@
 // account.go — 账号档案与真实余额（/users/<id>/balance，microUSD 折算美元）。
-package main
+package cline
 
 import (
 	"bytes"

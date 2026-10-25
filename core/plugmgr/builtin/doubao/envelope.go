@@ -1,7 +1,7 @@
 // doubao 工具调用（模拟 Function Calling）：豆包上游无原生工具能力，改用
 // 提示词注入 + 输出标签解析——多轮历史与工具定义合并为单条 prompt 下发，
 // 模型以 <tool_call>{...}</tool_call> 回吐，出站再解析为 ToolCallDelta。
-package main
+package doubao
 
 import (
 	"encoding/json"

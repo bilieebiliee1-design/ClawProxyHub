@@ -1,5 +1,5 @@
 // auth.go — 登录（凭据文件 / 手机验证码 / 浏览器 OAuth 三段式）、令牌刷新。
-package main
+package workbuddy
 
 import (
 	"context"

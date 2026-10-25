@@ -1,5 +1,5 @@
 // chat.go — 对话：POST /api/v2/chat/completions（OpenAI 方言 SSE，HMAC 签名）。
-package main
+package codearts
 
 import (
 	"bytes"

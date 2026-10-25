@@ -2,7 +2,7 @@
 //
 // 前置：账户必须是积分计费模式（is_credit_package）；幂等靠活动列表
 // claimable/status 预检（本协议无幂等键）；confirm 漏掉积分停待确认。
-package main
+package codearts
 
 import (
 	"context"

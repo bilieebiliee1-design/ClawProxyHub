@@ -1,5 +1,5 @@
 // model：模型目录（官方 get_models 同步 + 内置表兜底 + 模型解析）。
-package main
+package ima
 
 import (
 	"context"

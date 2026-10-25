@@ -1,5 +1,5 @@
 // 信封 → 上游消息转换、Chat 编排与 SSE 流解析。
-package main
+package improvado
 
 import (
 	"bytes"

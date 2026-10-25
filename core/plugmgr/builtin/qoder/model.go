@@ -1,5 +1,5 @@
 // model.go — 模型目录（内置表，"lite" 走服务端自动路由）。
-package main
+package qoder
 
 import (
 	"context"

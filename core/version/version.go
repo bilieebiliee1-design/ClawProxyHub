@@ -141,7 +141,23 @@ var Core = "1.2.9"
 //   缓存（修复旧 index.html 致面板导航静默失效）；账号生命周期审计日志（建档/轮换/
 //   删除/列表构成变更，凭据指纹不含明文）。Core 位保持 1.2.9（本地修订线，随上游
 //   同步不改号先例）。
-var Mobile = "1.5.0"
+// 1.5.1（2026-10-25）：随 APK v1.5.1（versionCode 18）同步——上游 v2.0.0/v2.0.1
+// 插件同步轮（核心 Go 零改动，Core 位保持 1.2.9；核心大轮事项整体推迟）：
+// ①内置插件 27→29（d4090ee 批次 26 升版 + workbuddy 0.1.10 请求体净化失效修复
+//   ——sanitizer 类型断言缺陷致聊天链路从未净化、指纹外发触发上游 11128，用户
+//   真实账号在用属最高优先；newapi 0.1.7 挑战服务接入 + cnb/logicc 0.1.0 新增
+//   内置，「安卓端暂不支持」徽章随内置数据自动消失）；②上游插件布局重构落地
+//   （e1be07a：命名包 plugin.go + New(version) + cmd 入口，正树每插件 cmd/main.go
+//   适配层去 !android 标签 + import 改指正树命名包）；③SDK pin 保持 0ddc177
+//   （replace 压 MVS：插件模块 @d4090ee 要求 SDK≥6805f65，其 Serve 已迁
+//   process.go 带 !android 会破安卓构建），gRPC 线协议零变更 pb 不重生成；
+//   deviations 三件登记于 tools/build-plugins.sh 头注（cmd 适配层 / zcode
+//   system_prompt.json 内嵌重涂 / newapi SettingsContext→Settings）；
+//   doubao 0.1.4 起 PR #1 已上游化、本地偏离删除；④面板两小件：插件设置 schema
+//   渲染扩展（0a2ad41 oneOf/password/min/max/integer，newapi 挑战服务设置依赖）
+//   + 分页顶部间距（0f0aecc 对位 margin→padding）；⑤29 插件全量重编（116 条
+//   SHA256SUMS）+ 面板 dist 重嵌入 + AAR 重编（-androidapi 34）。
+var Mobile = "1.5.1"
 
 // String 完整版本串："mobile (core x)" 形态，供 bridge.Version() 与关于页展示。
 func String() string { return Mobile + " (core " + Core + ")" }

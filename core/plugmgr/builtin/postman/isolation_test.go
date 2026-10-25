@@ -1,4 +1,4 @@
-package main
+package postman
 
 // F06 隔离验证：不同账号/实例/调用方同首条文本不得命中同一会话。
 import (

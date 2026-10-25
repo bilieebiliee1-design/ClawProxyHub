@@ -1,5 +1,5 @@
 // 验证流式边界、工具参数和凭据持久化。
-package main
+package warp
 
 import (
 	"bytes"

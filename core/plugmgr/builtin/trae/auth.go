@@ -5,7 +5,7 @@
 //     ⚠️ 回调参数名必须是 auth_callback_url），起本地回调 server；
 //  2. 回调**直接回传 refreshToken**（并存 PKCE 新流程带 code），不能只找 code；
 //  3. ExchangeToken(refreshToken) → GetUserInfo → 建档。
-package main
+package trae
 
 import (
 	"context"

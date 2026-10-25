@@ -1,5 +1,5 @@
 // 账号档案：session 拉全貌、额度缓存与刷新。
-package main
+package codebuff
 
 import (
 	"context"
@@ -22,7 +22,7 @@ func (p *plugin) Refresh(ctx context.Context, credBlob *pb.CredentialBlob) (*pb.
 		return &pb.RefreshResult{Error: &pb.Error{Code: 401, Message: err.Error()}}, nil
 	}
 	blob, _ := json.Marshal(c)
-	return &pb.RefreshResult{Blob: blob, Profile: profileOf(c)}, nil
+	return &pb.RefreshResult{Blob: blob, Profile: p.profileOf(c)}, nil
 }
 
 // GetProfile 账号全貌（GET /freebuff/session），失败降级为基本档案。
@@ -32,9 +32,9 @@ func (p *plugin) GetProfile(ctx context.Context, credBlob *pb.CredentialBlob) (*
 		return nil, err
 	}
 	if err := p.fetchProfile(ctx, c); err != nil {
-		return profileOf(c), nil
+		return p.profileOf(c), nil
 	}
-	return profileOf(c), nil
+	return p.profileOf(c), nil
 }
 
 // fetchProfile 拉账号全貌写缓存：GET /freebuff/session（带 include-unused 头拿 rateLimits）。
@@ -95,7 +95,7 @@ type sessionResp struct {
 }
 
 // profileOf 缓存 → 标准档案（remaining/total 是核心积分列标准键）。
-func profileOf(c *credential) *pb.AccountProfile {
+func (p *plugin) profileOf(c *credential) *pb.AccountProfile {
 	quota := map[string]string{}
 	if c.FreebucksD > 0 || c.Freebucks > 0 {
 		quota["remaining"] = formatNum(c.Freebucks)
@@ -105,12 +105,12 @@ func profileOf(c *credential) *pb.AccountProfile {
 			"remaining": formatNum(c.Freebucks), "total": formatNum(c.FreebucksD),
 		}); err == nil {
 			return &pb.AccountProfile{
-				DisplayName: credentialName(c), Healthy: true, Quota: quota,
+				DisplayName: p.credentialName(c), Healthy: true, Quota: quota,
 				CreditsJson: string(b),
 			}
 		}
 	}
-	return &pb.AccountProfile{DisplayName: credentialName(c), Healthy: true, Quota: quota}
+	return &pb.AccountProfile{DisplayName: p.credentialName(c), Healthy: true, Quota: quota}
 }
 
 // formatNum 数字 → 精简字符串（去尾零）。

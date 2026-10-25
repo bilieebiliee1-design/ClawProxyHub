@@ -1,5 +1,5 @@
 // color gateway 签名、端点路由、公共头与 JSON 请求。
-package main
+package joycode
 
 import (
 	"bytes"

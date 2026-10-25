@@ -1,5 +1,5 @@
 // Chat 编排：OpenAI 兼容请求体 → color gateway 流式，SSE 交 openaiup 解析。
-package main
+package joycode
 
 import (
 	"bytes"

@@ -2,7 +2,7 @@
 //
 // ⚠️ 模型路由：SOLO 协议模型只在列出它的通道里可调用（跨通道发 4001），
 // ListModels 时把 模型 → function 记进 modelChannel，Chat 时按通道发。
-package main
+package trae
 
 import (
 	"context"

@@ -1,5 +1,5 @@
 // upstream.go — Raccoon HTTP：API 常量 + 业务请求 helper（Bearer + 归属头）。
-package main
+package raccoon
 
 import (
 	"bytes"

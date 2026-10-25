@@ -1,0 +1,7 @@
+# 构建产物不入源码分支（NexPort 发行先例；2026-10-25 合规复审后固化）：
+# - app/src/main/jniLibs 下的 .so（libgojni/libluahost/libcloudflared/libplugin_*）
+#   由 tools/prepare-android.sh 自 core/dist 落位，源码分支消费者以
+#   tools/build-{luahost,cloudflared,plugins,aar}.sh 本地重建；
+# - core/luahost/luahost.exe 为桌面（Windows）构建残留物。
+app/src/main/jniLibs/*/*.so
+core/luahost/luahost.exe

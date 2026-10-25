@@ -2,7 +2,7 @@
 //
 // ⚠️ 不是每日签到：幂等一次性（已领过返回 granted:false，每号一次）；
 // 每日积分是服务端按日自动发放，没有端点，不要实现成签到按钮。
-package main
+package raccoon
 
 import (
 	"context"

@@ -1,5 +1,5 @@
 // Package main — zcode 模型目录：静态表（对齐上游 registry MODELS，plan 维度过滤）+ gRPC ListModels。
-package main
+package zcode
 
 import (
 	"context"

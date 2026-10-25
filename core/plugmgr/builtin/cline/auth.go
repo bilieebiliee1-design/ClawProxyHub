@@ -1,5 +1,5 @@
 // auth.go — 登录（WorkOS 设备码 / refreshToken 文件）、凭据刷新与 token 维护。
-package main
+package cline
 
 import (
 	"context"

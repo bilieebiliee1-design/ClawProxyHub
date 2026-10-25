@@ -1,5 +1,5 @@
 // chat.go — 对话：apiFormat=anthropic 直通 /v1/messages，其余转 openai 方言。
-package main
+package lobsterai
 
 import (
 	"context"

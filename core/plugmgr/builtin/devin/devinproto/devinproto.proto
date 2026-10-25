@@ -2,7 +2,7 @@
 // 重新生成：protoc --go_out=. --go_opt=paths=source_relative devinproto.proto
 syntax = "proto3";
 package exa.api_server_pb;
-option go_package = "github.com/ShadowSmallBaby/ClawProxyHubPlugins/plugins/devin/devinproto";
+option go_package = "github.com/ShadowSmallBaby/ClawProxyHubPlugins/plugins-go/devin/devinproto";
 
 enum ChatMessageRequestType {
   CHAT_MESSAGE_REQUEST_TYPE_UNSPECIFIED = 0;

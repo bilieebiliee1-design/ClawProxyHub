@@ -1,5 +1,5 @@
 // model.go — 模型目录（上游产品配置 cli agent 集，失败回退静态清单）。
-package main
+package workbuddy
 
 import (
 	"context"

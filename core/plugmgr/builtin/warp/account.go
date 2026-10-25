@@ -1,5 +1,5 @@
 // account.go — 凭据刷新（Refresh）与序列化。
-package main
+package warp
 
 import (
 	"context"

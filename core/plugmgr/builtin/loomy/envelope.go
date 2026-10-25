@@ -1,7 +1,7 @@
 // envelope.go — 信封多轮消息折叠为 Loomy 单 content + 身份指令注入。
 // Loomy 接口无 role 数组、只收单个 content，网页端会注入自身人设与工具；故以强
 // 祈使指令覆盖人设、禁工具、强制纯文本，并把系统设定与历史折叠进单条 content。
-package main
+package loomy
 
 import (
 	"strings"

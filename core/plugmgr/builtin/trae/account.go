@@ -1,5 +1,5 @@
 // account.go — 凭据解析、账号档案与刷新（ExchangeToken 轮换）。
-package main
+package trae
 
 import (
 	"bytes"

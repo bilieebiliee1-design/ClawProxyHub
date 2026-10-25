@@ -1,7 +1,7 @@
 // 核心链路：统一信封 → Agent Mode 请求 → Postman 私有 SSE → StreamEvent。
 // Postman 是服务端保留历史的会话模型（每轮只发最后一条 query + conversationId），
 // 插件用内存映射「线程 → 会话」跨轮复用，工具调用透传给下游执行。
-package main
+package postman
 
 import (
 	"context"

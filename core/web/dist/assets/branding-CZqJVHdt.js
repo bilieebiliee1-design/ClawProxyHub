@@ -1,0 +1,1 @@
+import{b as e}from"./index-BWi_nt3n.js";import{k as r,c as n}from"./vue-CK0x166Y.js";const o="NexPort",s="/logo.png",a=r({name:o,abbr:"NX",logo:""}),g=n(()=>a.logo||s),m=n(()=>a.name!==o);let t=!1;async function c(){try{Object.assign(a,await e.get("/admin/branding")),document.title=a.name,t=!0}catch{}}function b(){t||c()}export{g as a,a as b,m as c,b as e,c as r};

@@ -1,5 +1,5 @@
 // Chat 编排：session（拿 instance_id）→ startRun → OpenAI 兼容对话 → 收尾 run。
-package main
+package codebuff
 
 import (
 	"context"

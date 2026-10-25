@@ -1,6 +1,6 @@
 // 模型目录：Postman Agent Mode 服务端模型键（/_gw/config 返回）+ 通用别名。
 // 对外展示 Postman 键；Chat 时把请求 model 解析回 modelKey，未知回退默认。
-package main
+package postman
 
 import (
 	"strings"

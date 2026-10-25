@@ -7,7 +7,7 @@
 //     必须原样随请求发送，否则服务端验签失败；
 //   - Agent-Type / X-Language 等运行头在签名**之后**追加（不参与签名）——
 //     它们进 canonical request 会被服务端拒绝。
-package main
+package codearts
 
 import (
 	"crypto/hmac"
@@ -45,10 +45,10 @@ func signHuawei(req *http.Request, ak, sk, securityToken string, body []byte, ex
 	payloadHash := sha256Hex(body)
 
 	headers := map[string]string{
-		"host":                  u.Host,
-		"x-sdk-date":            dateStamp,
-		"x-sdk-content-sha256":  payloadHash,
-		"x-security-token":      securityToken,
+		"host":                 u.Host,
+		"x-sdk-date":           dateStamp,
+		"x-sdk-content-sha256": payloadHash,
+		"x-security-token":     securityToken,
 	}
 	if req.Method != http.MethodGet {
 		headers["content-type"] = "application/json"

@@ -1,5 +1,5 @@
 // 匿名凭据、HTTP client 与登录/账号档案。
-package main
+package chatjimmy
 
 import (
 	"context"

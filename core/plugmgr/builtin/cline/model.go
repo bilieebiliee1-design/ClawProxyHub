@@ -1,5 +1,5 @@
 // model.go — 模型目录（官方 recommended-models 免费池，需 accessToken）。
-package main
+package cline
 
 import (
 	"context"

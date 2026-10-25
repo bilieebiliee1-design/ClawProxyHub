@@ -4,7 +4,7 @@
 // chatCompletion 新增外发凭据 Cookie 头（cookieHeader()）：修复前插件仅 csrfToken()
 // 消费 Cookies 一键、从不外发 Cookie 头，登录态鉴权完全缺失 → 建档即 401
 // 「会话已过期」（上游返回 {"code":710012001,"msg":"登录已过期"}）。
-package main
+package doubao
 
 import (
 	"bytes"

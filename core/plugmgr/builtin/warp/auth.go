@@ -1,5 +1,5 @@
 // auth.go — 设备授权两步 Login + Firebase 刷新 + client login 握手。
-package main
+package warp
 
 import (
 	"bytes"

@@ -1,6 +1,6 @@
 // catalog.go — 成长任务模拟所需的目录接口：模板 / 专家 / 技能 / 主题。
 // 任务列表不带模板/专家/技能 id，这里对接桌面端实际使用的列表接口。
-package main
+package workbuddy
 
 import (
 	"context"

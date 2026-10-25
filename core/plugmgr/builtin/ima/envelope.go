@@ -1,5 +1,5 @@
 // 信封 → ima 单条 question 拼装（prompt 注入式 tool calling）。
-package main
+package ima
 
 import (
 	"encoding/json"

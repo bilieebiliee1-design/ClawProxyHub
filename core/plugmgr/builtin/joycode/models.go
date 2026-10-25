@@ -1,5 +1,5 @@
 // 模型目录：modelList 接口拉取。
-package main
+package joycode
 
 import (
 	"context"

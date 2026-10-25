@@ -1,5 +1,5 @@
 // chat.go — 对话：模型选择器解析（[1m]/effort）+ Claude(messages)/Codex(responses) 分派 → relay SSE。
-package main
+package mirasim
 
 import (
 	"encoding/json"

@@ -1,4 +1,4 @@
-package main
+package puter
 
 import (
 	pb "github.com/ShadowSmallBaby/ClawProxyHub/sdk/proto/cphv1"

@@ -1,5 +1,5 @@
 // task_checkin.go — 每日签到任务：查活动状态，未签则 POST daily-checkin。
-package main
+package workbuddy
 
 import (
 	"context"

@@ -1,5 +1,5 @@
 // 上游 HTTP 工具：JSON POST 与随机 client_id。
-package main
+package codebuff
 
 import (
 	"bytes"

@@ -1,0 +1,1 @@
+import{M as s}from"./tdesign-BAihEDOz.js";import{r as o}from"./vue-CK0x166Y.js";function f(){const r=o(!1);async function a(n,e){r.value=!0;try{return await n()}catch(t){e?.silent||s.error(t?.message||e?.errorText||"error");return}finally{r.value=!1}}return{loading:r,run:a}}export{f as u};

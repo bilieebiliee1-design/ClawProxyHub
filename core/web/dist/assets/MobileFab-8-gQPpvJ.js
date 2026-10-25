@@ -1,0 +1,1 @@
+/* empty css                                                                  */import{_ as o}from"./_plugin-vue_export-helper-DlAUqK2U.js";import{Z as t,ab as r,Q as s}from"./vue-CK0x166Y.js";const a={},c={class:"mobile-fab"};function n(e,_){return s(),t("div",c,[r(e.$slots,"default",{},void 0,!0)])}const l=o(a,[["render",n],["__scopeId","data-v-ea599f43"]]);export{l as M};

@@ -1,5 +1,5 @@
 // auth.go — mrs-sig-v2 Ed25519 请求签名、邮件/凭据导入登录、access token 刷新。
-package main
+package mirasim
 
 import (
 	"bytes"

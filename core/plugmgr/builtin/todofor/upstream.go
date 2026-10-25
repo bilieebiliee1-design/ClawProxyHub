@@ -1,6 +1,6 @@
 // todofor.ai 上游客户端：REST（建 todo / 拉消息 / 计费 / 项目 / Agent）+ 前端 WebSocket 订阅。
 // 移植自 todo2api internal/upstream，裁剪为插件所需子集（单账号，无池化）。
-package main
+package todofor
 
 import (
 	"bytes"

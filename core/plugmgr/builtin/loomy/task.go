@@ -4,7 +4,7 @@
 // alreadyProcessed=true（HTTP 200），故幂等。语义是「触发每日额度重置」
 // 而非「+积分」：dailyBalance = dailyQuota - dailyConsumed，消耗后不回补。
 // dailyQuota 仅 first-login 响应携带，未签到时不要硬编码。
-package main
+package loomy
 
 import (
 	"context"

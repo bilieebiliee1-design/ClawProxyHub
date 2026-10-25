@@ -1,6 +1,6 @@
 // 客户端工具协议：教上游用严格文本块表达工具调用（上游不能自己执行客户端工具）。
 // 移植自 todo2api internal/openai/toolproto.go，适配信封 ToolDefinition。
-package main
+package todofor
 
 import (
 	"crypto/sha256"

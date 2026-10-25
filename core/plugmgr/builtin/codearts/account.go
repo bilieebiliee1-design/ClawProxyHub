@@ -1,5 +1,5 @@
 // account.go — 凭据（AK/SK）解析、账号档案与刷新。
-package main
+package codearts
 
 import (
 	"context"

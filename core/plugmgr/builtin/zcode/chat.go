@@ -1,6 +1,6 @@
 // Package main — zcode 对话：统一信封 → Anthropic 上游（双计划）→ StreamEvent。
 // coding-plan：直连 Anthropic 端点 + V4 签名；start-plan：zcode.z.ai JWT 网关 + system 块注入。
-package main
+package zcode
 
 import (
 	"bytes"

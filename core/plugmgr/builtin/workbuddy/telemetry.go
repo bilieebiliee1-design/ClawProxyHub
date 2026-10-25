@@ -1,7 +1,7 @@
 // telemetry.go — WorkBuddy 客户端埋点（POST /v2/report）构造与发送。
 // 成长任务的进度判定只消费客户端埋点（实测不发对话也 +1），
 // 事件字段照桌面端 5.5.4 载荷复刻；机器指纹进程内固定，模拟同一台客户端。
-package main
+package workbuddy
 
 import (
 	"bytes"

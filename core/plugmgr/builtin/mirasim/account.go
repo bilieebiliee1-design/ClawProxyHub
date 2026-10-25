@@ -1,5 +1,5 @@
 // account.go — 凭据 blob 解析、设备密钥/身份派生、JWT claim、账号档案与配额快照。
-package main
+package mirasim
 
 import (
 	"context"

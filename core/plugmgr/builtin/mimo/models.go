@@ -1,5 +1,5 @@
 // models.go — 模型目录（后端无目录接口，本地静态表）。
-package main
+package mimo
 
 import (
 	"context"

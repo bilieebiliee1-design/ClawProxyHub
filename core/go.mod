@@ -3,8 +3,8 @@ module io.nexport.gateway/core
 go 1.27.0
 
 require (
-	github.com/ShadowSmallBaby/ClawProxyHub v1.5.3-0.20261004201619-0ddc177bf78f
-	github.com/ShadowSmallBaby/ClawProxyHubPlugins v0.0.0-20261004204335-1051ce2f8caa
+	github.com/ShadowSmallBaby/ClawProxyHub v1.5.3-0.20261010045129-6805f658f819
+	github.com/ShadowSmallBaby/ClawProxyHubPlugins v0.0.0-20261015122607-d4090ee18e83
 	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/websocket v1.5.3
@@ -18,6 +18,13 @@ require (
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.31.2
 )
+
+// SDK 钉死 0ddc177（v1.5.3-era 末代未重构 SDK）：ClawProxyHubPlugins @d4090ee 的
+// go.mod 要求 SDK ≥6805f65（其 sdk.Serve 已迁 process.go 且 //go:build !android，
+// GOOS=android 构建下 builtin/*/cmd 无入口）——MVS 会静默顶版，replace 压制。
+// 29 个插件源实测零使用 v2.0-only SDK 符号，0ddc177 面全覆盖；未来升 SDK v2.0.x
+// 须同步换注入模型（见 mobile-port v1.5.1 轮方案）。
+replace github.com/ShadowSmallBaby/ClawProxyHub => github.com/ShadowSmallBaby/ClawProxyHub v1.5.3-0.20261004201619-0ddc177bf78f
 
 require (
 	github.com/fatih/color v1.13.0 // indirect

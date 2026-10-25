@@ -1,6 +1,6 @@
 // chat.go — 对话：统一信封 → OpenAI 兼容 /api/route/chat/completions（流式 + 非流式均恒流式上行，
 // 与 newapi 不同的是 401 需强制刷新 SSO 后重试一次）。
-package main
+package mimo
 
 import (
 	"bytes"

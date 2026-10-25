@@ -1,5 +1,5 @@
 // auth.go — 账号密码 / 凭据文件登录：站点会话 → 自举出 access_token + user_id + api_key。
-package main
+package newapi
 
 import (
 	"bytes"

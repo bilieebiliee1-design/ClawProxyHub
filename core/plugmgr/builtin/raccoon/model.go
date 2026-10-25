@@ -1,5 +1,5 @@
 // model.go — 模型目录（llm/v2/model_catalog，visible 模型 + 倍率展示名）。
-package main
+package raccoon
 
 import (
 	"context"

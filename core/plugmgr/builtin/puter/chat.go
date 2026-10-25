@@ -1,5 +1,5 @@
 // chat.go — 对话：统一信封 → puter 驱动请求 JSON，消费 NDJSON 流。
-package main
+package puter
 
 import (
 	"bufio"

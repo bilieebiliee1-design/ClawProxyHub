@@ -1,6 +1,6 @@
 // Package main — zcode 指纹头：ZCode 桌面客户端 identity 头（3.14.0 g6n 形态，
 // LLM 请求平面：无 X-Device-Mid）+ V4 请求签名（Ed25519 + PoW）。
-package main
+package zcode
 
 import (
 	"bytes"

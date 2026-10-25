@@ -1,5 +1,5 @@
 // chat.go — 对话：按模型原生协议选请求体/端点/解析器，双池路由与免费池工具补全。
-package main
+package opencode
 
 import (
 	"bytes"

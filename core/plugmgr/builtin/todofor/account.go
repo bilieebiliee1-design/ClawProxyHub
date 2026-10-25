@@ -1,5 +1,5 @@
 // account.go — 凭据 blob 解析、账号档案与计费余额快照。
-package main
+package todofor
 
 import (
 	"context"

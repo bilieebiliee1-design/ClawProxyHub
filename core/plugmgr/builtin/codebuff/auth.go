@@ -1,5 +1,5 @@
 // 凭据解析、HTTP client、鉴权头与登录（token 嗅探）。
-package main
+package codebuff
 
 import (
 	"context"
@@ -85,7 +85,7 @@ func (p *plugin) Login(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResu
 	if err := p.fetchProfile(ctx, c); err != nil {
 		return &pb.LoginResult{Error: &pb.Error{Code: 401, Message: "token 校验失败：" + err.Error()}}, nil
 	}
-	return loginDone(c), nil
+	return p.loginDone(c), nil
 }
 
 // bearerRe 从任意文本抓 Bearer token（curl/HAR 通用）。
@@ -118,19 +118,19 @@ func sniffToken(input string) string {
 	return ""
 }
 
-func loginDone(c *credential) *pb.LoginResult {
+func (p *plugin) loginDone(c *credential) *pb.LoginResult {
 	blob, _ := json.Marshal(c)
 	return &pb.LoginResult{
 		Blob: blob,
 		Profile: &pb.AccountProfile{
-			DisplayName: credentialName(c), Healthy: true, Quota: map[string]string{},
+			DisplayName: p.credentialName(c), Healthy: true, Quota: map[string]string{},
 		},
 	}
 }
 
-func credentialName(c *credential) string {
+func (p *plugin) credentialName(c *credential) string {
 	if c.Name != "" {
 		return c.Name
 	}
-	return "codebuff-" + version
+	return "codebuff-" + p.version
 }

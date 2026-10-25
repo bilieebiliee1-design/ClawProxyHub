@@ -1,5 +1,5 @@
 // upstream.go — HTTP client、网关/管理面请求头与管理面调用（会话过期自动重登）。
-package main
+package newapi
 
 import (
 	"context"

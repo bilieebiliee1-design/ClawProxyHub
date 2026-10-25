@@ -1,5 +1,5 @@
 // upstream.go — TRAE HTTP：API 常量 + 各信道请求头。
-package main
+package trae
 
 import (
 	"context"

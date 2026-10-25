@@ -1,7 +1,7 @@
 // 信封消息提取 + Postman 私有 SSE 解析。
 // Postman 每行 `data: {json}`，eventType 分派：textChunk / thinkingChunk / conversation /
 // toolCall(Chunk) / usage / [DONE]。
-package main
+package postman
 
 import (
 	"encoding/json"

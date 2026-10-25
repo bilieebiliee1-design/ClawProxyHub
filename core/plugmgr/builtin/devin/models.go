@@ -1,5 +1,5 @@
 // 模型目录（GetCascadeModelConfigs unary，TTL 缓存按凭据）。
-package main
+package devin
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"time"
 
 	pb "github.com/ShadowSmallBaby/ClawProxyHub/sdk/proto/cphv1"
-	devinproto "github.com/ShadowSmallBaby/ClawProxyHubPlugins/plugins/devin/devinproto"
+	devinproto "github.com/ShadowSmallBaby/ClawProxyHubPlugins/plugins-go/devin/devinproto"
 	"github.com/ShadowSmallBaby/ClawProxyHubPlugins/shared"
 	"google.golang.org/protobuf/proto"
 )

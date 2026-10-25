@@ -24,7 +24,8 @@ core）与 `core/go.mod`、`core/luahost/go.mod` 为准；安卓侧以 AAB
 | gorm.io/gorm ＋ gorm.io/driver/sqlite | v1.31.2 / v1.6.0 | MIT | ORM（WAL） |
 | github.com/jinzhu/inflection | v1.0.0 | MIT | gorm 间接依赖（复数变形，随 libgojni 分发） |
 | github.com/jinzhu/now | v1.1.5 | MIT | gorm 间接依赖（时间处理，随 libgojni 分发） |
-| google.golang.org/genproto/googleapis/rpc | v0.0.0-20260630182238-925bb5da69e7 | Apache-2.0 | gRPC 间接依赖（status/codes，随 libgojni 分发） || github.com/yuin/gopher-lua | v1.1.1（core/luahost/go.mod） | MIT | Lua 插件运行时（白名单沙箱） |
+| google.golang.org/genproto/googleapis/rpc | v0.0.0-20260630182238-925bb5da69e7 | Apache-2.0 | gRPC 间接依赖（status/codes，随 libgojni 分发） |
+| github.com/yuin/gopher-lua | v1.1.1（core/luahost/go.mod） | MIT | Lua 插件运行时（白名单沙箱） |
 | github.com/google/uuid | v1.6.0 | BSD-3-Clause（Google） | UUID |
 | golang.org/x/crypto | v0.57.0 | BSD-3-Clause（Go 作者） | bcrypt 等 |
 | golang.org/x/net | v0.59.0（bridge/go.mod pin——AAR 构建入口；core/go.mod 为 v0.58.0） | BSD-3-Clause（Go 作者） | HTTP/2 等 |
@@ -39,15 +40,18 @@ klauspost/compress（BSD-3）、gopacket（BSD-3）。完整清单见 cloudflare
 
 ## 一之二、内置 Go 插件（APK 预打包，来源仓库 ClawProxyHubPlugins）
 
-APK 内预打包的官方源 index 全量 27 个内置 Go 插件（chatjimmy 0.1.2 / cline 0.1.6 / codearts 0.1.1 /
-codebuff 0.1.2 / commandcode 0.1.3 / devin 0.1.0 / doubao 0.1.3 / gorkcli 0.1.2 / ima 0.1.4 /
-improvado 0.1.2 / joycode 0.1.2 / lobsterai 0.1.8 / loomy 0.1.2 / mimo 0.1.2 / mirasim 0.1.2 /
-newapi 0.1.5 / notion 0.1.2 / opencode 0.1.5 / postman 0.1.2 / puter 0.1.2 / qoder 0.1.2 /
-raccoon 0.1.1 / todofor 0.1.2 / trae 0.1.1 / warp 0.1.0 / workbuddy 0.1.8 / zcode 0.1.2，
-上游 @1051ce2（devin/warp 0.1.0 为 v1.5.0 新增内置；doubao 0.1.3 为 PR #1 凭据外发修复版，
-该 PR 已于 2026-10-05 被上游并入 @55a3a51，三偏离自此为上游正典）；
+APK 内预打包的官方源 index 全量 29 个内置 Go 插件（chatjimmy 0.1.3 / cline 0.1.7 / cnb 0.1.0 /
+codearts 0.1.2 / codebuff 0.1.3 / commandcode 0.1.4 / devin 0.1.1 / doubao 0.1.4 / gorkcli 0.1.3 /
+ima 0.1.5 / improvado 0.1.3 / joycode 0.1.3 / lobsterai 0.1.9 / logicc 0.1.0 / loomy 0.1.3 /
+mimo 0.1.3 / mirasim 0.1.3 / newapi 0.1.7 / notion 0.1.3 / opencode 0.1.6 / postman 0.1.3 /
+puter 0.1.3 / qoder 0.1.3 / raccoon 0.1.2 / todofor 0.1.3 / trae 0.1.2 / warp 0.1.1 /
+workbuddy 0.1.10 / zcode 0.1.3，
+上游 @d4090ee（devin/warp 0.1.0 为 v1.5.0 新增内置；doubao 0.1.3 起 PR #1 三偏离为上游
+正典（并入 @55a3a51），0.1.4 起按上游原样同步；cnb/logicc 0.1.0 为 v1.5.1 新增内置，
+cnb 上游 manifest 无 icon 字段故无 icon.png；workbuddy 0.1.10 修复请求体净化失效
+ff0ffc8；newapi 0.1.7 接入挑战服务（shared/challenge 求解器适配器，@411642a 新增））；
 `core/dist/plugins/<abi>/libplugin_<名>_<abi>.so` → `app/src/main/jniLibs/<abi>/`，经
-`tools/build-plugins.sh` 交叉编译；Lua 插件 autoclaw 0.1.2 不预打包、走市场动态安装）的**来源仓库**：
+`tools/build-plugins.sh` 交叉编译；Lua 插件 autoclaw 0.1.3 不预打包、走市场动态安装）的**来源仓库**：
 
 - **github.com/ShadowSmallBaby/ClawProxyHubPlugins**（https://github.com/ShadowSmallBaby/ClawProxyHubPlugins ）
   —— **AGPL-3.0**（仓库根 `LICENSE` 为 GNU Affero General Public License v3.0 全文，已本地核实）。
@@ -59,7 +63,7 @@ raccoon 0.1.1 / todofor 0.1.2 / trae 0.1.1 / warp 0.1.0 / workbuddy 0.1.8 / zcod
 
 | 组件 | 版本（发行构建解析） | 许可 | 用途 |
 | --- | --- | --- | --- |
-| github.com/ShadowSmallBaby/ClawProxyHub | v1.5.3-0.20261004201619-0ddc177bf78f（v1.5.2 同步；经 gateway-mobile `core/go.mod` 锚定解析） | AGPL-3.0 | 上游核心库（插件宿主 API/共享类型） |
+| github.com/ShadowSmallBaby/ClawProxyHub | v1.5.3-0.20261004201619-0ddc177bf78f（v1.5.2 同步；经 gateway-mobile `core/go.mod` replace 指令钉定——插件模块 @d4090ee 的 go.mod 要求 SDK≥6805f65，其 sdk.Serve 已迁 process.go 且 //go:build !android，replace 压制 MVS 顶版以保 GOOS=android 插件入口可用） | AGPL-3.0 | 上游核心库（插件宿主 API/共享类型） |
 | github.com/gorilla/websocket | v1.5.3 | BSD-2-Clause（Copyright 2013 The Gorilla WebSocket Authors；缓存 LICENSE 原文核实） | WebSocket 客户端 |
 | github.com/warpdotdev/warp-proto-apis/apis/multi_agent | v0.0.0-20260917164411-f5c1878026bc | **AGPL-3.0**（上游仓库 LICENSE.md 为 GNU Affero General Public License v3，Copyright (C) 2020-2026 Denver Technologies, Inc.——经 GitHub API 于 2026-09-26 本地核实；该许可文件未随 go module 归档分发，归档内仅 go.mod/go.sum/.proto/生成代码，使用方需自上游仓库获取许可全文） | lobsterai / warp 插件上游协议 stub（v1.5.0 warp 插件新增同款依赖） |
 | golang.org/x/crypto | v0.57.0 | BSD-3-Clause（Go 作者） | 加密原语 |
@@ -137,6 +141,31 @@ com.google.guava:listenablefuture:1.0；org.jetbrains:annotations:13.0。
 
 #### 安卓侧变更记录（合规复审追踪）
 
+- **v1.5.1（2026-10-25）**：**§一之二 内置 Go 插件 27 → 29**——上游 ClawProxyHubPlugins
+  @1051ce2 → @d4090ee 批次收编：26 插件升版（chatjimmy 0.1.3 / cline 0.1.7 / codearts
+  0.1.2 / codebuff 0.1.3 / commandcode 0.1.4 / devin 0.1.1 / doubao 0.1.4 / gorkcli
+  0.1.3 / ima 0.1.5 / improvado 0.1.3 / joycode 0.1.3 / lobsterai 0.1.9 / loomy 0.1.3 /
+  mimo 0.1.3 / mirasim 0.1.3 / newapi 0.1.7 / notion 0.1.3 / opencode 0.1.6 / postman
+  0.1.3 / puter 0.1.3 / qoder 0.1.3 / raccoon 0.1.2 / todofor 0.1.3 / trae 0.1.2 /
+  warp 0.1.1 / zcode 0.1.3，随上游 e1be07a 布局重构：根目录 package main → 命名包
+  plugin.go + New(version) + cmd/main.go 入口；**NexPort 侧新增每插件 cmd/main.go
+  适配层偏离**（去 //go:build !android + import 改指正树命名包，登记于
+  build-plugins.sh 头注））+ 新增内置 **cnb 0.1.0 / logicc 0.1.0**（纯 Go 无新第三方
+  依赖；cnb 上游 manifest 无 icon 字段）。workbuddy 0.1.10 修复请求体净化失效
+  （@ff0ffc8，sanitizer 类型断言缺陷致聊天链路从未净化）；newapi 0.1.7 接入挑战
+  服务（@9c2a949），其新依赖 shared/challenge（@411642a，ezsolver/solverq 统一求解
+  适配器）为插件仓自带纯 Go 包、仅标准库依赖，无新第三方组件；newapi
+  challenge.go 一处 `Host.SettingsContext`（v2.0 *Context 变体）→ 旧 SDK 同步
+  `Settings` 适配偏离（登记于 build-plugins.sh 头注）。**SDK 锚点保持 0ddc177**
+  （插件模块 @d4090ee 的 go.mod 要求 SDK≥6805f65，其 sdk.Serve 已迁 process.go 且
+  //go:build !android——core/go.mod 以 replace 压制 MVS 顶版；gRPC 线协议
+  0ddc177..44e3688 零变更，pb 不重生成）；doubao 0.1.4 起按上游原样（PR #1 正典，
+  本地 credential_test.go 随偏离退役）；zcode system_prompt.json 内嵌偏离随 0.1.3
+  重涂延续（v1.4.3）。内嵌清单与 libplugin_* 双 ABI 产物同源重编（SHA256SUMS
+  29×2×2=116 条）；§三 面板两小件对位：插件设置 schema 渲染扩展（上游 0a2ad41：
+  oneOf(const+title)/format:password/minimum/maximum/integer——newapi 挑战服务设置
+  依赖）+ 分页顶部间距（上游 0f0aecc 对位 margin→padding，Logs/Tasks 两视图）；
+  Lua autoclaw 0.1.3 仍动态安装（仅 manifest 版本行变更）。
 - **v1.5.0（2026-10-05）**：**§一之二 内置 Go 插件 25 → 27**——官方源 index 26 插件更新
   批次全量收编（上游 ClawProxyHubPlugins @1051ce2：chatjimmy 0.1.2 / cline 0.1.6 /
   codearts 0.1.1 / codebuff 0.1.2 / commandcode 0.1.3 / doubao 0.1.3 / gorkcli 0.1.2 /
