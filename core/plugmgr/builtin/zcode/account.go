@@ -13,9 +13,15 @@ import (
 	shared "github.com/ShadowSmallBaby/ClawProxyHubPlugins/shared"
 )
 
-const (
-	zcodeAPIBase = "https://zcode.z.ai/api/v1"
+// 上游主机（var 为 httptest 单测注入点；默认值即生产值。bigmodelHost 保持 const：
+// 业务面 API 不参与单测，模型对话端点在 chat.go bigmodelAnthropicBase）。
+var (
+	zcodeOrigin  = "https://zcode.z.ai"
+	zcodeAPIBase = zcodeOrigin + "/api/v1"
 	zaiHost      = "https://api.z.ai"
+)
+
+const (
 	bigmodelHost = "https://bigmodel.cn"
 	apiKeyName   = "zcode-api-key"
 	// 默认机构 / 项目（UTF-8 字面量对齐上游 DEFAULT_ORG_MARKER）

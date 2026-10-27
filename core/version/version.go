@@ -157,7 +157,25 @@ var Core = "1.2.9"
 //   渲染扩展（0a2ad41 oneOf/password/min/max/integer，newapi 挑战服务设置依赖）
 //   + 分页顶部间距（0f0aecc 对位 margin→padding）；⑤29 插件全量重编（116 条
 //   SHA256SUMS）+ 面板 dist 重嵌入 + AAR 重编（-androidapi 34）。
-var Mobile = "1.5.1"
+// 1.5.2（2026-10-27）：随 APK v1.5.2（versionCode 19）同步——zcode 插件修复轮
+// （对照 magpie-community/plugins packages/zcode 0.1.31 参照实现，MIT，语义同型
+// 借鉴，登记于 THIRD_PARTY_NOTICES.md）：
+// ①bigmodel 对话端点错指修复（upstreamBase 两分支同值 → open.bigmodel.cn，live
+//   目录/magpie BIGMODEL_BASE 三方一致）；
+// ②start-plan 第四 system 块 405/3012 拒载修复（客户端 system 并入第三块、恒 3 块，
+//   magpie dress #343 同型）+ context_prefix 前缀消息类型断言缺陷修复（原被静默跳过）；
+// ③V4 签名键大小写失配修复（chat.go 小写写键 vs fingerprint.go 大写读键 → 签名恒
+//   fail-open 死码；键统一小写，门/fail-open 机制不变）；
+// ④模型目录换代（GLM-5.3/GLM-5.3-Flash 静态表，ctx 1M，Flash 带 vision + client/configs
+//   两步动态拉取：规则叠加层解析、10min 缓存、last-good、静态兜底）；
+// ⑤P1 保真项（x-session-id 会话稳定化、metadata.user_id、X-Device-Mid 出站、
+//   app_version 3.16.3 + x-zcode-query-source、上游错误语义映射 405/3012/1113/1005/
+//   1302/1303/Aliyun 页）；⑥死代码清理（signHeaders 恒空转误导块 + gateNeg 占位）。
+//   httptest 单测自证（登录全链/双计划对话请求构造/签名契约/目录解析）；插件偏离
+//   登记于 tools/build-plugins.sh 头注 4)，三项 bug 已上游化（ClawProxyHubPlugins
+//   PR #6）。Core 位保持 1.2.9（本地修订线）；AAR 随 Mobile 位重编（版本链六处
+//   一致口径），zcode so 重编、其余 28 插件产物哈希不变。
+var Mobile = "1.5.2"
 
 // String 完整版本串："mobile (core x)" 形态，供 bridge.Version() 与关于页展示。
 func String() string { return Mobile + " (core " + Core + ")" }

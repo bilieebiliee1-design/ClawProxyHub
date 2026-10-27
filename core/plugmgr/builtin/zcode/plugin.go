@@ -21,8 +21,12 @@ import (
 
 const (
 	pluginName = "zcode"
-	// ZCode 桌面客户端版本与来源头（identity 伪装基线）
-	defaultAppVersion  = "3.14.0"
+	// ZCode 桌面客户端版本与来源头（identity 伪装基线）。
+	// P1-8：3.14.0 → 3.16.3（magpie APP_VERSION 同值，现行客户端代际；identity 头
+	// 形态与 3.16 startHeaders 同构，system_prompt.json 五段哈希与 JS 0.1.31 公布值
+	// 全等已核验——升版本号无 prompt 联动风险。appVersion 是 V4 签名输入之一，
+	// 与签名键修复同批落地）。用户设置项 app_version 保留可覆盖。
+	defaultAppVersion  = "3.16.3"
 	defaultReferer     = "https://zcode.z.ai"
 	anthropicSDKSuffix = "ai-sdk/anthropic/3.0.81"
 	anthropicVersion   = "2023-06-01"
@@ -105,6 +109,10 @@ type credential struct {
 	JWT       string `json:"jwt,omitempty"` // start-plan 计划令牌
 	UserID    string `json:"user_id,omitempty"`
 	DeviceMid string `json:"device_mid,omitempty"`
+	// SessionID 账号级稳定会话 id（P1-5，magpie #388：x-session-id / metadata
+	// user_id.session_id 共用；登录时生成持久进 blob，旧 blob 缺失时按凭据材料
+	// 确定性派生，无需重登录）。
+	SessionID string `json:"session_id,omitempty"`
 
 	// 出站代理（核心注入，不参与序列化）
 	proxyURL string `json:"-"`
@@ -167,7 +175,7 @@ func (p *plugin) Handshake(ctx context.Context, req *pb.HandshakeRequest) (*pb.H
 					"type": "string",
 					"title": "客户端版本",
 					"description": "X-ZCode-App-Version 伪装值，须与套餐要求的最低客户端版本一致",
-					"default": "3.14.0"
+					"default": "3.16.3"
 				}
 			}
 		}`,

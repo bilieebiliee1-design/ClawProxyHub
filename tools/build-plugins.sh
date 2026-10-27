@@ -32,6 +32,41 @@
 #   3) newapi/challenge.go challengeClient：上游 Host.SettingsContext(ctx,name)
 #      （v2.0 *Context 变体）改旧 SDK 同步 Settings(name)（nil 失败语义一致，见
 #      该文件内注）。
+#   4) zcode 功能修复（2026-10-27，对照 magpie-community/plugins packages/zcode
+#      0.1.31 参照实现；全部为对上游 d4090ee 的新偏离，重同步上游时逐项保留；
+#      bug 修复类按 doubao PR #1 先例反哺上游）：
+#      ① chat.go upstreamBase("bigmodel") 改 open.bigmodel.cn/api/anthropic——
+#        上游两分支同值错指 api.z.ai，oauth_bigmodel 对话必错端点（P0-1）；
+#      ② chat.go applyStartPlanBody 客户端 system 并入第三块 dynamic 尾部、恒 3 块
+#        ——上游第四+块形态被 zcode.z.ai 405/3012 拒载（P0-2，magpie dress #343）；
+#        另修：context_prefix 前缀消息因 ChatBody messages 为 []map[string]interface{}
+#        而上游断言 []interface{} 恒失败被静默跳过（e2e 单测发现的隐性缺陷），两种
+#        形态均归一化；
+#      ③ fingerprint.go 签名键统一小写 x-session-id（headerSessionID 常量 +
+#        signingSessionID 助手）——上游 chat.go 小写写键、fingerprint.go 大写读键，
+#        Go map 键大小写敏感 → sessionID 恒空 → V4 签名恒 fail-open 死码
+#        （P0-3 案 A；签名门 probeGate/fail-open 机制保持现状）；
+#      ④ model.go 静态表换代 GLM-5.3/GLM-5.3-Flash（ctx 1M/maxOut 128k，Flash 带
+#        vision，双 plan 开放；旧表 glm-4.6/glm-4.5-air/glm-4.5v 已消失）+ 动态目录
+#        两步拉取（client/configs → builtin_provider_config_json → 规则叠加层，
+#        magpie remoteConfig/modelsOf 同型；10min 缓存 + 失败 60s 冷却 + last-good +
+#        静态兜底）（P0-4）；
+#      ⑤ P1 保真项：x-session-id 会话稳定化（credential.SessionID 落 blob + 凭据
+#        派生回退，magpie #388）、metadata.user_id 注入（#387）、X-Device-Mid 出站
+#        （登录 init/poll + start-plan messages + 模型目录拉取；#282）、
+#        app_version 默认 3.16.3（schema default 同步；用户设置项保留）+
+#        start-plan x-zcode-query-source: main_turn（3.16 头代差）、上游错误语义
+#        映射（405/3012→403 风控、1113/1005→429 耗尽、1302/1303→429 限速、
+#        Aliyun 边缘页→502 网络提示）、zcodeOrigin/zcodeAPIBase/zaiHost 与上游
+#        Anthropic 端点常量改 var（httptest 单测注入点，默认值=生产值）；
+#      ⑥ 新增 zcode_test.go（httptest 自证：登录全链/双计划对话请求构造/V4 签名
+#        键契约与 fail-open/模型目录解析/错误映射）；
+#      ⑦ fingerprint.go 死代码清理（合规复审 2026-10-27 顺带项）：上游 signHeaders
+#        内恒空转误导块 `if bypass || gateNeg() == false && false { _ = gateOK }`
+#        与 gateNeg() 占位函数行为等价移除（bypass 判定保留），随 PR #6 同步上游。
+#      未采纳（诚实标注）：P1-10 authorize_url redirect_uri 重写——诊断实测
+#      loginInit 响应自含服务端回调 redirect_uri（zcode.z.ai/api/v1/oauth/cli/
+#      callback/<provider>），manual_poll 现状可用，重写必要性存疑，不随本轮落地。
 #   （doubao 0.1.4 起无本地偏离：PR #1 三偏离已上游化（55a3a51 合并，0.1.4 基座
 #      含 cookieHeader/loginCookieHeader/msToken），按上游原样同步。）
 #

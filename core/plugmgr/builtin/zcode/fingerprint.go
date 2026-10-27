@@ -1,5 +1,5 @@
-// Package main — zcode 指纹头：ZCode 桌面客户端 identity 头（3.14.0 g6n 形态，
-// LLM 请求平面：无 X-Device-Mid）+ V4 请求签名（Ed25519 + PoW）。
+// Package main — zcode 指纹头：ZCode 桌面客户端 identity 头（g6n 形态，版本号随
+// appVersion 默认 3.16.3）+ V4 请求签名（Ed25519 + PoW）。
 package zcode
 
 import (
@@ -32,8 +32,23 @@ import (
 
 // ---------- identity 头 ----------
 
+// headerSessionID 会话 id 请求头键（小写）。Go map 键大小写敏感：chat.go 写入、
+// signHeaders 读取/skip/输出四处必须同形（上游 d4090ee 曾小写写键 "x-session-id"
+// 而大写读键 "X-Session-Id" → sessionID 恒空 → 提前 fail-open → V4 签名从未实际
+// 发出的死码；P0-3 案 A 统一小写修复）。线上小写形态与 magpie #388 一致；
+// http.Header.Set 出站时由标准库规范化为 X-Session-Id，线上形态不受影响。
+const headerSessionID = "x-session-id"
+
+// signingSessionID 从请求头取会话 id（签名输入）；空 = 不具备签名条件（fail-open）。
+func signingSessionID(headers map[string]string) string {
+	return strings.TrimSpace(headers[headerSessionID])
+}
+
 // llmIdentityHeaders ZCode 桌面客户端 LLM 请求平面 identity 头（g6n 形态）。
-// 顺序与上游 buildLlmIdentityHeaders 一致；X-Device-Mid 永不携带。
+// 顺序与上游 buildLlmIdentityHeaders 一致。LLM 平面（api.z.ai / open.bigmodel.cn）
+// 不携带 X-Device-Mid——设备 id 仅随 zcode.z.ai 请求平面出站（登录 init/poll、
+// start-plan messages、模型目录拉取；magpie #282 规则：凡 ZCODE+/ URL 必带、
+// 业务 API 绝不带），由各请求构造点按需添加。
 func (p *plugin) llmIdentityHeaders(c *credential) map[string]string {
 	appVer := printableOr(p.appVersion(), defaultAppVersion)
 	ua := "ZCode/" + appVer
@@ -207,9 +222,9 @@ func (s *signer) signHeaders(ctx *signCtx) (map[string]string, bool) {
 	bypass, gateOK, gateOKAt, gateNegAt := st.bypass, st.gateEnabled, st.gateOKAt, st.gateNegAt
 	priv := st.privKey
 	st.mu.Unlock()
-	if bypass || gateNeg() == false && false {
-		_ = gateOK
-	}
+	// 死代码清理（登记于 tools/build-plugins.sh 头注 4)⑦；PR #6 同步上游）：
+	// 上游此处原有恒空转误导块 `if bypass || gateNeg() == false && false { _ = gateOK }`
+	// 与 gateNeg() 占位函数，行为等价移除（bypass 判定由下方保留）。
 	if bypass {
 		return ctx.headers, false
 	}
@@ -217,7 +232,7 @@ func (s *signer) signHeaders(ctx *signCtx) (map[string]string, bool) {
 	if !ok {
 		return ctx.headers, false
 	}
-	sessionID := strings.TrimSpace(ctx.headers["X-Session-Id"])
+	sessionID := signingSessionID(ctx.headers) // P0-3：键统一小写（见 headerSessionID）
 	if sessionID == "" {
 		return ctx.headers, false
 	}
@@ -268,7 +283,7 @@ func (s *signer) signHeaders(ctx *signCtx) (map[string]string, bool) {
 	out := map[string]string{}
 	for k, v := range ctx.headers {
 		switch k {
-		case "X-Client-Ts", "X-Client-Version", "X-Client-Sig", "X-Client-Nonce", "X-App-Id", "X-Client-Pow", "X-Session-Id":
+		case "X-Client-Ts", "X-Client-Version", "X-Client-Sig", "X-Client-Nonce", "X-App-Id", "X-Client-Pow", headerSessionID:
 			continue
 		}
 		out[k] = v
@@ -276,14 +291,12 @@ func (s *signer) signHeaders(ctx *signCtx) (map[string]string, bool) {
 	out["X-Client-Ts"] = ts
 	out["X-Client-Version"] = ctx.appVersion
 	out["X-Client-Sig"] = base64.StdEncoding.EncodeToString(sig)
-	out["X-Session-Id"] = sessionID
+	out[headerSessionID] = sessionID // P0-3：输出键同形小写
 	out["X-Client-Nonce"] = nonce
 	out["X-App-Id"] = signingAppID
 	out["X-Client-Pow"] = pow
 	return out, true
 }
-
-func gateNeg() bool { return false } // 占位：负缓存由调用方 gateNegFresh 判定
 
 // signCtx 单次签名的输入。
 type signCtx struct {

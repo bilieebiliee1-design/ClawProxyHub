@@ -246,6 +246,12 @@ com.google.guava:listenablefuture:1.0；org.jetbrains:annotations:13.0。
 
 - SQLite（SQLite Public Domain）—— 经 mattn/go-sqlite3 静态编入。
 - 安卓构建工具链（AGP/Gradle/NDK）属构建期工具，不在分发产物内。
+- **magpie-community/plugins `packages/zcode`**（MIT，
+  https://github.com/magpie-community/plugins ）——v1.5.2 zcode 插件修复轮的语义参照
+  实现（端点常量、start-plan system 三块组装、metadata.user_id、x-session-id 会话
+  与 X-Device-Mid 携带规则、上游错误语义映射均语义同型借鉴；Go 实现独立编写，无逐字
+  拷贝；MIT 对语义级借鉴不强制声明，按本项目合规严谨度主动登记）。致谢详见
+  `core/plugmgr/builtin/zcode/` 各文件头注与 `tools/build-plugins.sh` 头注 4)。
 - **随包源码包 `nexport-source.zip` 已再次移除**（v1.4.0 曾恢复；合规复审 2026-09-28
   裁定恢复 v1.3.0 移除态）：本 fork 完整对应源码以公开 fork 仓库
   https://github.com/bilieebiliee1-design/ClawProxyHub 为提供渠道（AGPL §13，见下节）；
